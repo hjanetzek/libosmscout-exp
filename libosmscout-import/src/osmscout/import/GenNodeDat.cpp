@@ -85,6 +85,19 @@ namespace osmscout {
 
     writer.Write(nodesWrittenCount);
 
+//    // Create a data file and index for the set
+//    // of unique strings in each node saved
+//    FileOffset nsOffset;
+//    OSMSCOUT_HASHSET<std::string> setUnqNodeStrings;
+
+//    FileScanner nsWriter;
+//    if(!nsWriter.Open(AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                      "nodestrings.dat")))   {
+//        progress.Error("Cannot create 'nodestrings.dat'");
+//        return false;
+//    }
+
+
     for (uint32_t n=1; n<=rawNodeCount; n++) {
       progress.SetProgress(n,rawNodeCount);
 
@@ -125,6 +138,60 @@ namespace osmscout {
                      typeConfig,
                      tags);
 
+//        // Save string attributes associated with the node
+//        uint32_t name_prio=0;
+//        uint32_t name_alt_prio=0;
+
+//        std::string name;
+//        std::string name_alt;
+//        std::string street;
+//        std::string address;
+
+//        std::vector<Tag>::iterator tag_it = tags.begin();
+//        while(tag_it != tags.end()) {
+//            uint32_t tag_name_prio,tag_name_alt_prio;
+//            bool isNameTag = typeConfig.IsNameTag(tag_it->key,tag_name_prio);
+//            bool isNameAltTag = typeConfig.IsNameAltTag(tag_it->key,tag_name_alt_prio);
+
+//            if(isNameTag && (name.empty() || tag_name_prio > name_prio)) {
+//                name = tag_it->value;
+//                name_prio = tag_name_prio;
+//            }
+
+//            if(isNameAltTag && (name.empty() || tag_name_alt_prio > name_alt_prio)) {
+//                name_alt = tag_it->value;
+//                name_alt_prio = tag_name_alt_prio;
+//            }
+
+//            if(isNameTag || isNameAltTag) {
+//                tag_it = tags.erase(tag_it);
+//            }
+//            else if(tag_it->key == typeConfig.tagStreet) {
+//                street = tag_it->value;
+//                tag_it = tags.erase(tag_it);
+//            }
+//            else if(tag_it->key == typeConfig.tagHouseNr) {
+//                address = tag_it->value;
+//                tag_it = tags.erase(tag_it);
+//            }
+//            else {
+//                ++tag_it;
+//            }
+//        }
+
+        if(!node.GetAttributes().GetName().empty())   {
+            // For the initial import and first pass
+            // of the data, we specify a negative file
+            // offset id for city/street attributes to
+            // write some placeholder bytes to file
+            if(typeConfig.GetTypeInfo(rawNode.GetType()).GetFindCity()) {
+                node.SetEmptyCity();
+            }
+            if(typeConfig.GetTypeInfo(rawNode.GetType()).GetFindStreet()) {
+                node.SetEmptyStreet();
+            }
+        }
+
         FileOffset fileOffset;
 
         if (!writer.GetPos(fileOffset)) {
@@ -134,11 +201,13 @@ namespace osmscout {
         }
 
         writer.Write(rawNode.GetId());
-        node.Write(writer);
+        if(!node.Write(writer)) {
+            progress.Error(std::string("Error trying to write node:")+
+                           NumberToString(rawNode.GetId()));
+        }
 
         nodesWrittenCount++;
       }
-
     }
 
     if (!scanner.Close()) {

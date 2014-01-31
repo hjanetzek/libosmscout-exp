@@ -33,81 +33,122 @@
 
 namespace osmscout {
 
-  class OSMSCOUT_API NodeAttributes
-  {
-  private:
-    // Attribute availability flags (for optimized attribute storage)
-    const static uint8_t hasNameAlt      = 1 << 3; //! We have an alternative name (mainly in a second language)
-    const static uint8_t hasName         = 1 << 4; //! We have a name
-    const static uint8_t hasLocation     = 1 << 5; //! Street and...
-    const static uint8_t hasAddress      = 1 << 6; //! ...house number
-    const static uint8_t hasTags         = 1 << 7; //! We have additional tags
-
-  private:
-    mutable uint8_t  flags;
-
-    std::string      name;     //! name
-    std::string      nameAlt;  //! alternative name
-    std::string      location; //! street and...
-    std::string      address;  //! ...house number
-    std::vector<Tag> tags;     //! list of preparsed tags
-
-  private:
-    void GetFlags(uint8_t& flags) const;
-    bool Read(FileScanner& scanner);
-    bool Write(FileWriter& writer) const;
-
-    friend class Node;
-
-  public:
-    inline NodeAttributes()
-    : flags(0)
+    class OSMSCOUT_API NodeAttributes
     {
-      // no code
-    }
+    private:
+        // availability flags (for optimized attribute storage)
+        const static uint8_t hasCity         = 1 << 1; //! City object offset and...
+        const static uint8_t hasCityAsNode   = 1 << 2; //! City object offset and...
+        const static uint8_t hasStreet       = 1 << 3; //! Street object offset
+        const static uint8_t hasNameAlt      = 1 << 4; //! We have an alternative name (mainly in a second language)
+        const static uint8_t hasName         = 1 << 5; //! We have a name
+        const static uint8_t hasAddress      = 1 << 6; //! ...house number
+        const static uint8_t hasTags         = 1 << 7; //! We have additional tags
 
-    inline uint8_t GetFlags() const
-    {
-      return flags;
-    }
+        // data
+        mutable uint8_t  flags;
+        std::string      name;     //! name
+        std::string      nameAlt;  //! alternative name
+        std::string      address;  //! house number
 
-    inline std::string GetName() const
-    {
-      return name;
-    }
+        bool             cityIsNode;
+        std::vector<Tag> tags;     //! list of preparsed tags
 
-    inline std::string GetNameAlt() const
-    {
-      return nameAlt;
-    }
+        FileOffset       street;   //! Must be a way type
+        FileOffset       city;     //! Can be a node or area
+        bool streetIsEmpty;
+        bool cityIsEmpty;
 
-    inline std::string GetLocation() const
-    {
-      return location;
-    }
+    private:
+        void GetFlags(uint8_t& flags) const;
+        bool Read(FileScanner& scanner);
+        bool Write(FileWriter& writer) const;
 
-    inline std::string GetAddress() const
-    {
-      return address;
-    }
+        friend class Node;
 
-    inline bool HasTags() const
-    {
-      return !tags.empty();
-    }
+    public:
+        inline NodeAttributes()
+        : flags(0),
+          street(0),
+          city(0),
+          cityIsNode(false),
+          streetIsEmpty(true),
+          cityIsEmpty(true)
+        {
+          // no code
+        }
 
-    inline const std::vector<Tag>& GetTags() const
-    {
-      return tags;
-    }
+        inline uint8_t GetFlags() const
+        {
+          return flags;
+        }
 
-    bool SetTags(Progress& progress,
-                 const TypeConfig& typeConfig,
-                 std::vector<Tag>& tags);
+        inline std::string GetName() const
+        {
+          return name;
+        }
 
-    bool operator==(const NodeAttributes& other) const;
-    bool operator!=(const NodeAttributes& other) const;
-  };
+        inline std::string GetNameAlt() const
+        {
+          return nameAlt;
+        }
+
+        inline std::string GetAddress() const
+        {
+          return address;
+        }
+
+        inline FileOffset GetCity() const
+        {
+            return city;
+        }
+
+        inline bool GetCityTypeIsNode() const
+        {
+            return ((this->HasCity()) && (flags&hasCityAsNode)) != 0;
+        }
+
+        inline FileOffset GetStreet() const
+        {
+            return street;
+        }
+
+        inline bool HasCity() const
+        {
+            return ((flags&hasCity) && (!cityIsEmpty)) != 0;
+        }
+
+        inline bool HasStreet() const
+        {
+            return ((flags&hasStreet) && (!streetIsEmpty)) != 0;
+        }
+
+        inline bool HasTags() const
+        {
+          return !tags.empty();
+        }
+
+        inline const std::vector<Tag>& GetTags() const
+        {
+          return tags;
+        }
+
+
+        bool SetTags(Progress& progress,
+                     const TypeConfig& typeConfig,
+                     std::vector<Tag>& tags);
+
+        void SetEmptyCity();
+        void SetEmptyStreet();
+
+        void SetCity(FileOffset cityOffset,
+                     bool cityIsNode);
+
+        void SetStreet(FileOffset streetOffset);
+
+        bool operator==(const NodeAttributes& other) const;
+        bool operator!=(const NodeAttributes& other) const;
+    };
 
   class OSMSCOUT_API Node : public Referencable
   {
@@ -164,7 +205,10 @@ namespace osmscout {
 
     inline std::string GetLocation() const
     {
-      return attributes.GetLocation();
+        // TODO remove this function
+        // altogether
+        std::string s;
+        return s;
     }
 
     inline std::string GetAddress() const
@@ -182,6 +226,11 @@ namespace osmscout {
     bool SetTags(Progress& progress,
                  const TypeConfig& typeConfig,
                  std::vector<Tag>& tags);
+    void SetEmptyCity();
+    void SetEmptyStreet();
+    void SetCity(FileOffset cityOffset,
+                 bool cityIsNode);
+    void SetStreet(FileOffset streetOffset);
 
     bool Read(FileScanner& scanner);
     bool Write(FileWriter& writer) const;

@@ -293,6 +293,8 @@ PRODUCTIONS
                | "INDEX_LOC"         (. typeInfo.SetIndexAsLocation(true); .)
                | "INDEX_REGION"      (. typeInfo.SetIndexAsRegion(true); .)
                | "INDEX_POI"         (. typeInfo.SetIndexAsPOI(true); .)
+               | "FIND_CITY"         (. typeInfo.SetFindCity(true); .)
+               | "FIND_STREET"       (. typeInfo.SetFindStreet(true); .)
                | "CONSUME_CHILDREN"  (. typeInfo.SetConsumeChildren(true); .)
                | "OPTIMIZE_LOW_ZOOM" (. typeInfo.SetOptimizeLowZoom(true); .)
                | "IGNORE"            (. typeInfo.SetIgnore(true); .)

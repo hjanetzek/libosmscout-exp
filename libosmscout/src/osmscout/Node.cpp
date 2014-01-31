@@ -30,7 +30,6 @@ namespace osmscout {
 
     name.clear();
     nameAlt.clear();
-    location.clear();
     address.clear();
 
     flags=0;
@@ -59,10 +58,6 @@ namespace osmscout {
       if (isNameTag || isNameAltTag) {
         tag=tags.erase(tag);
       }
-      else if (tag->key==typeConfig.tagStreet) {
-        location=tag->value;
-        tag=tags.erase(tag);
-      }
       else if (tag->key==typeConfig.tagHouseNr) {
         address=tag->value;
         tag=tags.erase(tag);
@@ -74,32 +69,57 @@ namespace osmscout {
 
     this->tags=tags;
 
+    if(!name.empty()) {
+        flags |= hasName;
+    }
+    if(!nameAlt.empty()) {
+        flags |= hasNameAlt;
+    }
+    if(!address.empty()) {
+        flags |= hasAddress;
+    }
+    if(!this->tags.empty()) {
+        flags |= hasTags;
+    }
+
     return true;
+  }
+
+  void NodeAttributes::SetEmptyCity()
+  {
+      flags |= hasCity;
+      cityIsEmpty = true;
+  }
+
+  void NodeAttributes::SetEmptyStreet()
+  {
+      flags |= hasStreet;
+      streetIsEmpty = true;
+  }
+
+  void NodeAttributes::SetCity(FileOffset cityOffset,
+                               bool cityIsNode)
+  {
+      flags |= hasCity;
+      city = cityOffset;
+      cityIsEmpty=false;
+
+      if(cityIsNode) {
+          flags |= hasCityAsNode;
+      }
+      this->cityIsNode=cityIsNode;
+  }
+
+  void NodeAttributes::SetStreet(FileOffset streetOffset)
+  {
+      flags |= hasStreet;
+      street = streetOffset;
+      streetIsEmpty=false;
   }
 
   void NodeAttributes::GetFlags(uint8_t& flags) const
   {
-    flags=0;
-
-    if (!name.empty()) {
-      flags|=hasName;
-    }
-
-    if (!nameAlt.empty()) {
-      flags|=hasNameAlt;
-    }
-
-    if (!location.empty()) {
-      flags|=hasLocation;
-    }
-
-    if (!address.empty()) {
-      flags|=hasAddress;
-    }
-
-    if (!tags.empty()) {
-      flags|=hasTags;
-    }
+      flags = this->flags;
   }
 
   bool NodeAttributes::Read(FileScanner& scanner)
@@ -118,12 +138,17 @@ namespace osmscout {
       scanner.Read(nameAlt);
     }
 
-    if (flags & hasLocation) {
-      scanner.Read(location);
-    }
-
     if (flags & hasAddress) {
       scanner.Read(address);
+    }
+
+    if (flags & hasCity) {
+        scanner.Read(cityIsNode);
+        scanner.ReadFileOffset(city);
+    }
+
+    if (flags & hasStreet) {
+        scanner.ReadFileOffset(street);
     }
 
     if (flags & hasTags) {
@@ -160,12 +185,17 @@ namespace osmscout {
       writer.Write(nameAlt);
     }
 
-    if (flags & hasLocation) {
-      writer.Write(location);
-    }
-
     if (flags & hasAddress) {
       writer.Write(address);
+    }
+
+    if(flags & hasCity) {
+        writer.Write(cityIsNode);
+        writer.WriteFileOffset(city);
+    }
+
+    if(flags & hasStreet) {
+        writer.WriteFileOffset(street);
     }
 
     if (flags & hasTags) {
@@ -184,9 +214,23 @@ namespace osmscout {
   {
     if (name!=other.name ||
         nameAlt!=other.nameAlt ||
-        location!=other.location ||
         address!=other.address) {
       return false;
+    }
+
+    if(this->flags != other.GetFlags()) {
+        return false;
+    }
+
+    if(this->HasCity()!=other.HasCity() ||
+       this->GetCity()!=other.GetCity() ||
+       this->GetCityTypeIsNode()!=other.GetCityTypeIsNode()) {
+        return false;
+    }
+
+    if(this->HasStreet()!=other.HasStreet() ||
+       this->GetStreet()!=other.GetStreet()) {
+        return false;
     }
 
     if (tags.empty() && other.tags.empty()) {
@@ -233,6 +277,28 @@ namespace osmscout {
     return attributes.SetTags(progress,
                               typeConfig,
                               tags);
+  }
+
+  void Node::SetEmptyCity()
+  {
+      attributes.SetEmptyCity();
+  }
+
+  void Node::SetEmptyStreet()
+  {
+      attributes.SetEmptyStreet();
+  }
+
+  void Node::SetCity(FileOffset cityOffset,
+                     bool cityIsNode)
+  {
+      attributes.SetCity(cityOffset,
+                         cityIsNode);
+  }
+
+  void Node::SetStreet(FileOffset streetOffset)
+  {
+      attributes.SetStreet(streetOffset);
   }
 
   bool Node::Read(FileScanner& scanner)

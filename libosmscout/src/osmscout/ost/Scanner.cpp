@@ -149,8 +149,8 @@ Scanner::~Scanner() {
 void Scanner::Init() {
   EOL    = '\n';
   eofSym = 0;
-	maxT = 46;
-	noSym = 46;
+	maxT = 48;
+	noSym = 48;
 	int i;
 	for (i = 65; i <= 90; ++i) start.set(i, 1);
 	for (i = 97; i <= 122; ++i) start.set(i, 1);
@@ -187,16 +187,18 @@ void Scanner::Init() {
 	keywords.set("INDEX_LOC", 33);
 	keywords.set("INDEX_REGION", 34);
 	keywords.set("INDEX_POI", 35);
-	keywords.set("CONSUME_CHILDREN", 36);
-	keywords.set("OPTIMIZE_LOW_ZOOM", 37);
-	keywords.set("IGNORE", 38);
-	keywords.set("MULTIPOLYGON", 39);
-	keywords.set("PIN_WAY", 40);
-	keywords.set("IGNORESEALAND", 41);
-	keywords.set("ROUTE", 42);
-	keywords.set("FOOT", 43);
-	keywords.set("BICYCLE", 44);
-	keywords.set("CAR", 45);
+	keywords.set("FIND_CITY", 36);
+	keywords.set("FIND_STREET", 37);
+	keywords.set("CONSUME_CHILDREN", 38);
+	keywords.set("OPTIMIZE_LOW_ZOOM", 39);
+	keywords.set("IGNORE", 40);
+	keywords.set("MULTIPOLYGON", 41);
+	keywords.set("PIN_WAY", 42);
+	keywords.set("IGNORESEALAND", 43);
+	keywords.set("ROUTE", 44);
+	keywords.set("FOOT", 45);
+	keywords.set("BICYCLE", 46);
+	keywords.set("CAR", 47);
 
 
   tvalLength = 128;

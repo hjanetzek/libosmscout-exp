@@ -183,6 +183,8 @@ namespace osmscout {
     bool         indexAsLocation;
     bool         indexAsRegion;
     bool         indexAsPOI;
+    bool         findCity;
+    bool         findStreet;
     bool         consumeChildren;
     bool         optimizeLowZoom;
     bool         multipolygon;
@@ -359,6 +361,26 @@ namespace osmscout {
     inline bool GetIndexAsPOI() const
     {
       return indexAsPOI;
+    }
+    
+    inline void SetFindCity(bool find)
+    {
+        findCity = find;
+    }
+    
+    inline bool GetFindCity() const
+    {
+        return findCity;
+    }
+    
+    inline void SetFindStreet(bool find)
+    {
+        findStreet = find;
+    }
+    
+    inline bool GetFindStreet() const
+    {
+        return findStreet;
     }
 
     inline TypeInfo& SetConsumeChildren(bool consumeChildren)
