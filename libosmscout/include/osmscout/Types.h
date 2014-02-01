@@ -42,6 +42,8 @@ namespace osmscout {
 
   typedef uint16_t TypeId;
 
+  typedef uint32_t TextId;
+
   enum Vehicle
   {
     vehicleFoot     = 1,

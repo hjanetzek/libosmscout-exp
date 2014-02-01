@@ -25,11 +25,6 @@ namespace osmscout {
                                const TypeConfig& typeConfig,
                                std::vector<Tag>& tags)
   {
-    uint32_t namePriority=0;
-    uint32_t nameAltPriority=0;
-
-    name.clear();
-    nameAlt.clear();
     location.clear();
     address.clear();
 
@@ -39,27 +34,7 @@ namespace osmscout {
 
     std::vector<Tag>::iterator tag=tags.begin();
     while (tag!=tags.end()) {
-      uint32_t ntPrio;
-      bool     isNameTag=typeConfig.IsNameTag(tag->key,ntPrio);
-      uint32_t natPrio;
-      bool     isNameAltTag=typeConfig.IsNameAltTag(tag->key,natPrio);
-
-      if (isNameTag &&
-          (name.empty() || ntPrio>namePriority)) {
-        name=tag->value;
-        namePriority=ntPrio;
-      }
-
-      if (isNameAltTag &&
-          (nameAlt.empty() || natPrio>nameAltPriority)) {
-        nameAlt=tag->value;
-        nameAltPriority=natPrio;
-      }
-
-      if (isNameTag || isNameAltTag) {
-        tag=tags.erase(tag);
-      }
-      else if (tag->key==typeConfig.tagStreet) {
+      if (tag->key==typeConfig.tagStreet) {
         location=tag->value;
         tag=tags.erase(tag);
       }
@@ -74,32 +49,29 @@ namespace osmscout {
 
     this->tags=tags;
 
+    if(!address.empty()) {
+        flags |= hasAddress;
+    }
+    if(!location.empty()) {
+        flags |= hasLocation;
+    }
+    if(!this->tags.empty()) {
+        flags |= hasTags;
+    }
+
     return true;
   }
 
-  void NodeAttributes::GetFlags(uint8_t& flags) const
+  void NodeAttributes::SetNameId(TextId nameId)
   {
-    flags=0;
+      this->nameId = nameId;
+      flags |= hasName;
+  }
 
-    if (!name.empty()) {
-      flags|=hasName;
-    }
-
-    if (!nameAlt.empty()) {
-      flags|=hasNameAlt;
-    }
-
-    if (!location.empty()) {
-      flags|=hasLocation;
-    }
-
-    if (!address.empty()) {
-      flags|=hasAddress;
-    }
-
-    if (!tags.empty()) {
-      flags|=hasTags;
-    }
+  void NodeAttributes::SetNameAltId(TextId nameAltId)
+  {
+      this->nameAltId = nameAltId;
+      flags |= hasNameAlt;
   }
 
   bool NodeAttributes::Read(FileScanner& scanner)
@@ -111,11 +83,11 @@ namespace osmscout {
     }
 
     if (flags & hasName) {
-      scanner.Read(name);
+      scanner.ReadNumber(nameId);
     }
 
     if (flags & hasNameAlt) {
-      scanner.Read(nameAlt);
+      scanner.ReadNumber(nameAltId);
     }
 
     if (flags & hasLocation) {
@@ -146,18 +118,14 @@ namespace osmscout {
 
   bool NodeAttributes::Write(FileWriter& writer) const
   {
-    uint8_t flags;
-
-    GetFlags(flags);
-
     writer.Write(flags);
 
     if (flags & hasName) {
-      writer.Write(name);
+      writer.WriteNumber(nameId);
     }
 
     if (flags & hasNameAlt) {
-      writer.Write(nameAlt);
+      writer.WriteNumber(nameAltId);
     }
 
     if (flags & hasLocation) {
@@ -182,9 +150,14 @@ namespace osmscout {
 
   bool NodeAttributes::operator==(const NodeAttributes& other) const
   {
-    if (name!=other.name ||
-        nameAlt!=other.nameAlt ||
-        location!=other.location ||
+      if(HasName() != other.HasName() ||
+         HasNameAlt() != other.HasNameAlt() ||
+         GetNameId() != other.GetNameId() ||
+         GetNameAltId() != other.GetNameAltId()) {
+          return false;
+      }
+
+    if (location!=other.location ||
         address!=other.address) {
       return false;
     }
@@ -233,6 +206,16 @@ namespace osmscout {
     return attributes.SetTags(progress,
                               typeConfig,
                               tags);
+  }
+
+  void Node::SetNameId(TextId nameId)
+  {
+      attributes.SetNameId(nameId);
+  }
+
+  void Node::SetNameAltId(TextId nameAltId)
+  {
+      attributes.SetNameAltId(nameAltId);
   }
 
   bool Node::Read(FileScanner& scanner)

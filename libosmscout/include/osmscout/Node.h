@@ -46,14 +46,14 @@ namespace osmscout {
   private:
     mutable uint8_t  flags;
 
-    std::string      name;     //! name
-    std::string      nameAlt;  //! alternative name
     std::string      location; //! street and...
     std::string      address;  //! ...house number
     std::vector<Tag> tags;     //! list of preparsed tags
 
+    TextId nameId;
+    TextId nameAltId;
+
   private:
-    void GetFlags(uint8_t& flags) const;
     bool Read(FileScanner& scanner);
     bool Write(FileWriter& writer) const;
 
@@ -61,7 +61,9 @@ namespace osmscout {
 
   public:
     inline NodeAttributes()
-    : flags(0)
+    : flags(0),
+      nameId(0),
+      nameAltId(0)
     {
       // no code
     }
@@ -73,12 +75,22 @@ namespace osmscout {
 
     inline std::string GetName() const
     {
-      return name;
+        std::string s;
+        return s;
     }
 
     inline std::string GetNameAlt() const
     {
-      return nameAlt;
+       std::string s;
+       return s;
+    }
+
+    inline TextId GetNameId() const {
+        return nameId;
+    }
+
+    inline TextId GetNameAltId() const {
+        return nameAltId;
     }
 
     inline std::string GetLocation() const
@@ -96,6 +108,14 @@ namespace osmscout {
       return !tags.empty();
     }
 
+    inline bool HasName() const {
+        return (flags&hasName)!=0;
+    }
+
+    inline bool HasNameAlt() const {
+        return (flags&hasNameAlt)!=0;
+    }
+
     inline const std::vector<Tag>& GetTags() const
     {
       return tags;
@@ -104,6 +124,9 @@ namespace osmscout {
     bool SetTags(Progress& progress,
                  const TypeConfig& typeConfig,
                  std::vector<Tag>& tags);
+
+    void SetNameId(TextId nameId);
+    void SetNameAltId(TextId nameAltId);
 
     bool operator==(const NodeAttributes& other) const;
     bool operator!=(const NodeAttributes& other) const;
@@ -182,6 +205,9 @@ namespace osmscout {
     bool SetTags(Progress& progress,
                  const TypeConfig& typeConfig,
                  std::vector<Tag>& tags);
+
+    void SetNameId(TextId nameId);
+    void SetNameAltId(TextId nameAltId);
 
     bool Read(FileScanner& scanner);
     bool Write(FileWriter& writer) const;

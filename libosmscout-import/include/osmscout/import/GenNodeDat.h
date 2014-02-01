@@ -21,6 +21,7 @@
 */
 
 #include <osmscout/import/Import.h>
+#include <marisa.h>
 
 namespace osmscout {
 
@@ -31,6 +32,17 @@ namespace osmscout {
     bool Import(const ImportParameter& parameter,
                 Progress& progress,
                 const TypeConfig& typeConfig);
+
+  private:
+    bool genNodeTextDict(ImportParameter const &parameter,
+                         Progress &progress,
+                         TypeConfig const &typeConfig,
+                         marisa::Trie &trie);
+
+    void cutNameDataFromTags(TypeConfig const &typeConfig,
+                             std::vector<Tag> &tags,
+                             std::string &name,
+                             std::string &name_alt);
   };
 }
 
