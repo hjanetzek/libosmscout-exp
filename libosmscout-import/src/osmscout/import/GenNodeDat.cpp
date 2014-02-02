@@ -183,10 +183,10 @@ namespace osmscout {
 
     writer.Write(nodesWrittenCount);
 
-    // Create an index for the node text dictionary
-    // that lets us lookup nodes based on dict key ids
-    OSMSCOUT_HASHMAP<TextId,std::vector<FileOffset> > table_dictkey_offsets;
-    OSMSCOUT_HASHMAP<TextId,std::vector<FileOffset> >::iterator table_it;
+//    // Create an index for the node text dictionary
+//    // that lets us lookup nodes based on dict key ids
+//    OSMSCOUT_HASHMAP<TextId,std::vector<FileOffset> > table_dictkey_offsets;
+//    OSMSCOUT_HASHMAP<TextId,std::vector<FileOffset> >::iterator table_it;
 
     for (uint32_t n=1; n<=rawNodeCount; n++) {
       progress.SetProgress(n,rawNodeCount);
@@ -237,9 +237,15 @@ namespace osmscout {
             marisa::Agent agent;
             agent.set_query(name.c_str());
 
+            // TODO Note:
+            // the libmarisa documentation seems to imply that
+            // 'Trie::lookup()' doesn't restore the key id but
+            // it does seem to (maybe it only applies to the key
+            // text?, need to verify)
             if(trie.lookup(agent)) {
                 dict_name_id=static_cast<TextId>(agent.key().id());
                 node.SetNameId(dict_name_id);
+                progress.Info("DEBUG:"+NumberToString(dict_name_id));
             }
             else {
                 std::string err_msg =
@@ -257,6 +263,7 @@ namespace osmscout {
             if(trie.lookup(agent)) {
                 dict_name_alt_id=static_cast<TextId>(agent.key().id());
                 node.SetNameAltId(dict_name_alt_id);
+                progress.Info("DEBUG:"+NumberToString(dict_name_alt_id));
             }
             else {
                 std::string err_msg =
@@ -287,7 +294,7 @@ namespace osmscout {
         }
 
 //        // save the dict id and FileOffsets
-//        // do these fileoffsets match the final nodes.dat?
+//        // do these fileoffsets match the final nodes.dat? NO
 //        if(!name.empty()) {
 //            table_it = table_dictkey_offsets.find(dict_name_id);
 //            if(table_it == table_dictkey_offsets.end()) {
