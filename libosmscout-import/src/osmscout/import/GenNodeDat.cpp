@@ -238,14 +238,14 @@ namespace osmscout {
             agent.set_query(name.c_str());
 
             // TODO Note:
-            // the libmarisa documentation seems to imply that
+            // In the libmarisa documentation its implied that
             // 'Trie::lookup()' doesn't restore the key id but
             // it does seem to (maybe it only applies to the key
             // text?, need to verify)
             if(trie.lookup(agent)) {
                 dict_name_id=static_cast<TextId>(agent.key().id());
                 node.SetNameId(dict_name_id);
-                progress.Info("DEBUG:"+NumberToString(dict_name_id));
+                //progress.Info("DEBUG:"+NumberToString(dict_name_id));
             }
             else {
                 std::string err_msg =
@@ -263,7 +263,7 @@ namespace osmscout {
             if(trie.lookup(agent)) {
                 dict_name_alt_id=static_cast<TextId>(agent.key().id());
                 node.SetNameAltId(dict_name_alt_id);
-                progress.Info("DEBUG:"+NumberToString(dict_name_alt_id));
+                //progress.Info("DEBUG:"+NumberToString(dict_name_alt_id));
             }
             else {
                 std::string err_msg =

@@ -62,6 +62,9 @@
 #include <osmscout/import/GenOptimizeAreasLowZoom.h>
 #include <osmscout/import/GenOptimizeWaysLowZoom.h>
 
+//
+#include <osmscout/import/GenNodeTextIndex.h>
+
 // Routing
 #include <osmscout/import/GenRouteDat.h>
 
@@ -647,6 +650,9 @@ namespace osmscout {
 
     /* 14 */
     modules.push_back(new SortWayDataGenerator());
+
+    //
+    modules.push_back(new NodeTextIndexGenerator());
 
     /* 15 */
     modules.push_back(new AreaNodeIndexGenerator());
