@@ -230,6 +230,11 @@ namespace osmscout {
         std::string name_alt;
         cutNameDataFromTags(typeConfig,tags,name,name_alt);
 
+        // need to set tags before settings nameid or namealtid!
+        node.SetTags(progress,
+                     typeConfig,
+                     tags);
+
         TextId dict_name_id,dict_name_alt_id;
 
         if(!name.empty()) {
@@ -245,7 +250,7 @@ namespace osmscout {
             if(trie.lookup(agent)) {
                 dict_name_id=static_cast<TextId>(agent.key().id());
                 node.SetNameId(dict_name_id);
-                //progress.Info("DEBUG:"+NumberToString(dict_name_id));
+//                progress.Info("DEBUG:"+NumberToString(dict_name_id));
             }
             else {
                 std::string err_msg =
@@ -263,7 +268,7 @@ namespace osmscout {
             if(trie.lookup(agent)) {
                 dict_name_alt_id=static_cast<TextId>(agent.key().id());
                 node.SetNameAltId(dict_name_alt_id);
-                //progress.Info("DEBUG:"+NumberToString(dict_name_alt_id));
+//                progress.Info("DEBUG:"+NumberToString(dict_name_alt_id));
             }
             else {
                 std::string err_msg =
@@ -274,9 +279,8 @@ namespace osmscout {
             }
         }
 
-        node.SetTags(progress,
-                     typeConfig,
-                     tags);
+//        std::string smsg=(node.GetAttributes().HasName()) ? "Yes" : "No";
+//        progress.Info("DEBUG:"+smsg);
 
         FileOffset fileOffset;
 
@@ -390,4 +394,5 @@ namespace osmscout {
           }
       }
   }
+
 }

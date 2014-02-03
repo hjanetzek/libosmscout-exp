@@ -600,111 +600,111 @@ namespace osmscout {
     typeConfig.RegisterNameTag("name",0);
     typeConfig.RegisterNameTag("place_name",1);
 
-    /* 1 */
-    modules.push_back(new TypeDataGenerator());
+//    /* 1 */
+//    modules.push_back(new TypeDataGenerator());
 
-    /* 2 */
-    modules.push_back(new Preprocess());
+//    /* 2 */
+//    modules.push_back(new Preprocess());
 
-    /* 3 */
-    modules.push_back(new NumericIndexGenerator<OSMId,RawNode>("Generating 'rawnode.idx'",
-                                                               AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                               "rawnodes.dat"),
-                                                               AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                               "rawnode.idx")));
-    /* 4 */
-    modules.push_back(new NumericIndexGenerator<OSMId,RawWay>("Generating 'rawway.idx'",
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              "rawways.dat"),
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              "rawway.idx")));
-    /* 5 */
-    modules.push_back(new NumericIndexGenerator<OSMId,RawRelation>("Generating 'rawrel.idx'",
-                                                                   AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                                   "rawrels.dat"),
-                                                                   AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                                   "rawrel.idx")));
-    /* 6 */
-    modules.push_back(new TurnRestrictionDataGenerator());
+//    /* 3 */
+//    modules.push_back(new NumericIndexGenerator<OSMId,RawNode>("Generating 'rawnode.idx'",
+//                                                               AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                               "rawnodes.dat"),
+//                                                               AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                               "rawnode.idx")));
+//    /* 4 */
+//    modules.push_back(new NumericIndexGenerator<OSMId,RawWay>("Generating 'rawway.idx'",
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              "rawways.dat"),
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              "rawway.idx")));
+//    /* 5 */
+//    modules.push_back(new NumericIndexGenerator<OSMId,RawRelation>("Generating 'rawrel.idx'",
+//                                                                   AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                                   "rawrels.dat"),
+//                                                                   AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                                   "rawrel.idx")));
+//    /* 6 */
+//    modules.push_back(new TurnRestrictionDataGenerator());
 
-    /* 7 */
-    modules.push_back(new RelAreaDataGenerator());
+//    /* 7 */
+//    modules.push_back(new RelAreaDataGenerator());
 
-    /* 8 */
-    modules.push_back(new WayAreaDataGenerator());
+//    /* 8 */
+//    modules.push_back(new WayAreaDataGenerator());
 
-    /* 9 */
-    modules.push_back(new WayWayDataGenerator());
+//    /* 9 */
+//    modules.push_back(new WayWayDataGenerator());
 
-    /* 10 */
-    modules.push_back(new OptimizeAreaWayIdsGenerator());
+//    /* 10 */
+//    modules.push_back(new OptimizeAreaWayIdsGenerator());
 
-    /* 11 */
-    modules.push_back(new NodeDataGenerator());
+//    /* 11 */
+//    modules.push_back(new NodeDataGenerator());
 
-    /* 12 */
-    modules.push_back(new SortNodeDataGenerator());
+//    /* 12 */
+//    modules.push_back(new SortNodeDataGenerator());
 
-    /* 13 */
-    modules.push_back(new SortAreaDataGenerator());
+//    /* 13 */
+//    modules.push_back(new SortAreaDataGenerator());
 
-    /* 14 */
-    modules.push_back(new SortWayDataGenerator());
+//    /* 14 */
+//    modules.push_back(new SortWayDataGenerator());
 
     //
     modules.push_back(new NodeTextIndexGenerator());
 
-    /* 15 */
-    modules.push_back(new AreaNodeIndexGenerator());
+//    /* 15 */
+//    modules.push_back(new AreaNodeIndexGenerator());
 
-    /* 16 */
-    modules.push_back(new AreaWayIndexGenerator());
+//    /* 16 */
+//    modules.push_back(new AreaWayIndexGenerator());
 
-    /* 17 */
-    modules.push_back(new AreaAreaIndexGenerator());
+//    /* 17 */
+//    modules.push_back(new AreaAreaIndexGenerator());
 
-    /* 18 */
-    modules.push_back(new WaterIndexGenerator());
+//    /* 18 */
+//    modules.push_back(new WaterIndexGenerator());
 
-    /* 19 */
-    modules.push_back(new OptimizeAreasLowZoomGenerator());
+//    /* 19 */
+//    modules.push_back(new OptimizeAreasLowZoomGenerator());
 
-    /* 20 */
-    modules.push_back(new OptimizeWaysLowZoomGenerator());
+//    /* 20 */
+//    modules.push_back(new OptimizeWaysLowZoomGenerator());
 
-    /* 21 */
-    modules.push_back(new LocationIndexGenerator());
+//    /* 21 */
+//    modules.push_back(new LocationIndexGenerator());
 
-    /* 22 */
-    modules.push_back(new RouteDataGenerator());
+//    /* 22 */
+//    modules.push_back(new RouteDataGenerator());
 
-    /* 23 */
-    modules.push_back(new NumericIndexGenerator<Id,Intersection>(std::string("Generating '")+Router::FILENAME_INTERSECTIONS_IDX+"'",
-                                                                 AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                                 Router::FILENAME_INTERSECTIONS_DAT),
-                                                                 AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                                 Router::FILENAME_INTERSECTIONS_IDX)));
+//    /* 23 */
+//    modules.push_back(new NumericIndexGenerator<Id,Intersection>(std::string("Generating '")+Router::FILENAME_INTERSECTIONS_IDX+"'",
+//                                                                 AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                                 Router::FILENAME_INTERSECTIONS_DAT),
+//                                                                 AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                                 Router::FILENAME_INTERSECTIONS_IDX)));
 
-    /* 24 */
-    modules.push_back(new NumericIndexGenerator<Id,RouteNode>(std::string("Generating '")+Router::FILENAME_FOOT_IDX+"'",
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              Router::FILENAME_FOOT_DAT),
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              Router::FILENAME_FOOT_IDX)));
+//    /* 24 */
+//    modules.push_back(new NumericIndexGenerator<Id,RouteNode>(std::string("Generating '")+Router::FILENAME_FOOT_IDX+"'",
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              Router::FILENAME_FOOT_DAT),
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              Router::FILENAME_FOOT_IDX)));
 
-    /* 25 */
-    modules.push_back(new NumericIndexGenerator<Id,RouteNode>(std::string("Generating '")+Router::FILENAME_BICYCLE_IDX+"'",
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              Router::FILENAME_BICYCLE_DAT),
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              Router::FILENAME_BICYCLE_IDX)));
+//    /* 25 */
+//    modules.push_back(new NumericIndexGenerator<Id,RouteNode>(std::string("Generating '")+Router::FILENAME_BICYCLE_IDX+"'",
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              Router::FILENAME_BICYCLE_DAT),
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              Router::FILENAME_BICYCLE_IDX)));
 
-    /* 26 */
-    modules.push_back(new NumericIndexGenerator<Id,RouteNode>(std::string("Generating '")+Router::FILENAME_CAR_IDX+"'",
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              Router::FILENAME_CAR_DAT),
-                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
-                                                                              Router::FILENAME_CAR_IDX)));
+//    /* 26 */
+//    modules.push_back(new NumericIndexGenerator<Id,RouteNode>(std::string("Generating '")+Router::FILENAME_CAR_IDX+"'",
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              Router::FILENAME_CAR_DAT),
+//                                                              AppendFileToDir(parameter.GetDestinationDirectory(),
+//                                                                              Router::FILENAME_CAR_IDX)));
 
     bool result=ExecuteModules(modules,parameter,progress,typeConfig);
 

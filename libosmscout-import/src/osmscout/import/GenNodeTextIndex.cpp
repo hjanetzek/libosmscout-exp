@@ -87,11 +87,18 @@ namespace osmscout
             return false;
         }
 
-        FileOffset nodes_dat_offset;
-        scanner.GetPos(nodes_dat_offset);
+        // Get number of nodes in 'nodes.dat'
+        uint32_t node_dat_count;
+        if(!scanner.Read(node_dat_count)) {
+            progress.Error("Could not read node count in 'nodes.dat'");
+            return false;
+        }
 
         // for each node
-        while(!scanner.IsEOF()) {
+        FileOffset nodes_dat_offset;
+        for(uint32_t i=0; i < node_dat_count; i++) {
+            scanner.GetPos(nodes_dat_offset);
+
             Node node;
             if(!node.Read(scanner)) {
                 std::string err_msg=
@@ -112,29 +119,37 @@ namespace osmscout
                 listOffsetsByTextId[name_alt_id].insert(nodes_dat_offset);
             }
 
-            scanner.GetPos(nodes_dat_offset);
+//            std::string smsg=(node.GetAttributes().HasName()) ? "Yes" : "No";
+//            progress.Info("DEBUG:"+smsg);
         }
         scanner.Close();
 
-        // 'nodetext.idx' format:
-        // [ [sz idx file offsets],   // offsetStartIdxOffsets
-        //   [idx file offsets],      // offsetStartNodeOffsets
-        //   [linear node dat file offsets] ]
 
-        // The first byte is an unsigned 32-bit int denoting
-        // how many idx file offsets there are.
 
-        // The beginning of the file consists of offsets to
-        // the part of the file where the corresponding map
-        // data file offsets are. So Byte 1 of nodetext.idx
-        // will be a 32-bit long unsigned number that will
-        // point to where the sequential list of FileOffsets
-        // that correspond to TextId 1 begin in the file.
 
-        // To determine how many FileOffsets are in the list,
-        // subtract the adjacent byte's value and divide by
-        // sizeof(FileOffset) bytes] (for the last TextId,
-        // read until EOF)
+        // nodetext.idx file format desc
+        //
+        // (starting from byte 0)
+        // size                     // desc
+        //
+        // uint32_t                 textid_count
+        //                          Number of TextIds in the index.
+        //
+        // uint32_t *               list_textid_lookup_offsets
+        // textid_count             List of local file offsets that point to the list
+        //                          of node data file offsets for the given TextId.
+        //
+        // uint32_t                 tail_textid_lookup_offsets
+        //                          Special entry at the end of local file offsets that
+        //                          points to the byte after the last node data file
+        //                          offset. This lets us know the size of the last list
+        //                          of node data file offsets by subtracting the tail
+        //                          offset value from the offset value immediately
+        //                          preceding it.
+        //
+        // sizeof(FileOffset) *     list_node_offsets
+        // num. node offsets        List of node data file offsets.
+
 
         std::string const file_nodetextidx =
                 AppendFileToDir(parameter.GetDestinationDirectory(),"nodetext.idx");
@@ -144,27 +159,31 @@ namespace osmscout
             progress.Error("Cannot create 'nodetext.idx'");
         }
 
-        //
-        FileOffset offsetStartIdxOffsets=sizeof(uint32_t);
-        FileOffset offsetStartNodeOffsets=
-                offsetStartIdxOffsets+
-                (sizeof(TextId)*listOffsetsByTextId.size());
+        // write the total number of TextIds
+        uint32_t textid_count=listOffsetsByTextId.size();
+        writer.Write(textid_count);
 
-        // Write the total number of node text ids
-        uint32_t num_text_ids = static_cast<uint32_t>(listOffsetsByTextId.size());
-        writer.WriteNumber(num_text_ids);
+        // write the local file offsets
 
-        // Write the local file offsets
-        // TODO: we can use 32-bit for offsets when they are
-        //       small enough to save space
-        FileOffset offsetNodeOffsets=offsetStartNodeOffsets;
-        for(size_t i=0; i < listOffsetsByTextId.size(); i++) {
-            // write the start of the set of node offsets
-            writer.WriteNumber(uint32_t(offsetNodeOffsets));
-            offsetNodeOffsets+=(listOffsetsByTextId[i].size()*sizeof(FileOffset));
+        // the first node offset will start at the current position
+        // plus the size of all list_textid_lookup_offsets (including
+        // the tail)
+        FileOffset offset_start_textids;
+        writer.GetPos(offset_start_textids);            // current pos
+
+        FileOffset offset_node_offsets =
+                offset_start_textids+
+                (sizeof(uint32_t)*(textid_count+1));    // +1 for tail
+
+        // write list_textid_lookup_offsets
+        for(uint32_t i=0; i < textid_count; i++) {
+            writer.Write(uint32_t(offset_node_offsets));
+            offset_node_offsets+=(listOffsetsByTextId[i].size()*sizeof(FileOffset));
         }
+        // tail_textid_lookup_offsets
+        writer.Write(uint32_t(offset_node_offsets));
 
-        // Write the node file offsets
+        // write list_node_offsets
         for(size_t i=0; i < listOffsetsByTextId.size(); i++) {
             std::set<FileOffset>::iterator it;
             for(it=listOffsetsByTextId[i].begin();
@@ -172,8 +191,6 @@ namespace osmscout
                 writer.WriteFileOffset(*it);
             }
         }
-
-        //
         writer.Close();
 
         testNodeTextIndex(parameter,progress);
@@ -185,7 +202,7 @@ namespace osmscout
                                                    Progress &progress)
     {
         // TODO
-        // check what happens when we try to save an
+        // check what happens when we try to save/open an
         // empty trie with libmarisa
 
         // Open up the node text trie
@@ -218,41 +235,47 @@ namespace osmscout
             progress.Error("TEST / Cannot open 'nodetext.idx'");
         }
 
-        // Read in number of total text ids
-        uint32_t num_text_ids = 0;
-        scanner.ReadNumber(num_text_ids);
 
-        // Set index start
-        FileOffset offsetStartIdxOffsets;
-        scanner.GetPos(offsetStartIdxOffsets);
+        // read in number of TextIds
+        uint32_t textid_count;
+        scanner.Read(textid_count);
 
-        // read in local offsets index
-        // FileOffset, count
-        std::vector<std::pair<FileOffset,uint32_t> > listLocalOffsets;
+        // read in offsets:
+        // vector index: TextId
+        // uint32_t: local file lookup offset
+        // uint32_t: num node data file offsets for TextId
+        // Note
+        // The last index is the tail
+        std::vector<std::pair<uint32_t,uint32_t> > list_offsets;
 
-        for(size_t i=0; i < num_text_ids; i++) {
-            std::pair<FileOffset,uint32_t> insData;
-            scanner.ReadNumber(insData.first);
+        for(uint32_t i=0; i < textid_count; i++) {
+            std::pair<uint32_t,uint32_t> insData;
+            scanner.Read(insData.first);
             insData.second=0;
-            listLocalOffsets.push_back(insData);
+            list_offsets.push_back(insData);
         }
+        //progress.Info("TEST / COUNT "+NumberToString(textid_count));
 
-        for(size_t i=0; i < num_text_ids-1; i++) {
-            listLocalOffsets[i].second = (listLocalOffsets[i+1].first-listLocalOffsets[i].first)/sizeof(FileOffset);
+        // Get the number of offsets for each TextId by
+        // finding the difference between adjacent offsets
+        for(uint32_t i=0; i < textid_count; i++) {
+            list_offsets[i].second=(list_offsets[i+1].first-list_offsets[i].first)/sizeof(FileOffset);
         }
-        // get last count
-        scanner.SetPos(listLocalOffsets.back().first);
-        while(!scanner.IsEOF()) {
-            listLocalOffsets.back().second++;
-        }
-
 
         // get some textids:
+        std::vector<TextId> list_lookup_textids;
         marisa::Agent agent;
-        agent.set_query("s");
+        agent.set_query("T");
 
         while(trie.predictive_search(agent)) {
-            std::string msg="DEBUG / "+std::string(agent.key().ptr());
+            TextId textid = static_cast<TextId>(agent.key().id());
+            std::string count_objs = NumberToString(list_offsets[textid].first);
+            //std::string count_objs = NumberToString(textid);
+            std::string msg=
+                    "DEBUG / "+
+                    std::string(agent.key().ptr(),agent.key().length())+
+                    " --- "+
+                    count_objs;
             progress.Info(msg);
         }
     }

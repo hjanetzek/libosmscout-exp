@@ -83,11 +83,11 @@ namespace osmscout {
     }
 
     if (flags & hasName) {
-      scanner.ReadNumber(nameId);
+      scanner.Read(nameId);
     }
 
     if (flags & hasNameAlt) {
-      scanner.ReadNumber(nameAltId);
+      scanner.Read(nameAltId);
     }
 
     if (flags & hasLocation) {
@@ -121,11 +121,11 @@ namespace osmscout {
     writer.Write(flags);
 
     if (flags & hasName) {
-      writer.WriteNumber(nameId);
+      writer.Write(nameId);
     }
 
     if (flags & hasNameAlt) {
-      writer.WriteNumber(nameAltId);
+      writer.Write(nameAltId);
     }
 
     if (flags & hasLocation) {
