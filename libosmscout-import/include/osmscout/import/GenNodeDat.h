@@ -21,6 +21,7 @@
 */
 
 #include <osmscout/import/Import.h>
+#include <osmscout/Node.h>
 #include <marisa.h>
 
 namespace osmscout {
@@ -34,10 +35,22 @@ namespace osmscout {
                 const TypeConfig& typeConfig);
 
   private:
-    bool genNodeTextDict(ImportParameter const &parameter,
-                         Progress &progress,
+    bool loadTextDataTries(ImportParameter const &parameter,
+                           Progress &progress,
+                           marisa::Trie &trie_poi,
+                           marisa::Trie &trie_loc,
+                           marisa::Trie &trie_region,
+                           marisa::Trie &trie_other);
+
+    bool saveNodeTextIds(Progress &progress,
                          TypeConfig const &typeConfig,
-                         marisa::Trie &trie);
+                         std::string const &name,
+                         std::string const &name_alt,
+                         Node &node,
+                         marisa::Trie &trie_poi,
+                         marisa::Trie &trie_loc,
+                         marisa::Trie &trie_region,
+                         marisa::Trie &trie_other);
 
     void cutNameDataFromTags(TypeConfig const &typeConfig,
                              std::vector<Tag> &tags,

@@ -22,8 +22,6 @@
 #include <iostream>
 #include <map>
 
-#include <osmscout/Node.h>
-
 #include <osmscout/system/Math.h>
 
 #include <osmscout/util/File.h>
@@ -40,109 +38,10 @@ namespace osmscout {
     return "Generate 'nodes.tmp'";
   }
 
-  bool NodeDataGenerator::genNodeTextDict(ImportParameter const &parameter,
-                                          Progress &progress,
-                                          TypeConfig const &typeConfig,
-                                          marisa::Trie &trie)
-  {
-      progress.SetAction("Generating nodetext.dict");
-
-      std::string file_rawnodes=
-              AppendFileToDir(parameter.GetDestinationDirectory(),
-                              "rawnodes.dat");
-
-      FileScanner scanner;
-      if(!scanner.Open(file_rawnodes,
-                       FileScanner::Sequential,
-                       parameter.GetRawNodeDataMemoryMaped())) {
-          progress.Error("Cannot open 'rawnodes.dat'");
-          return false;
-      }
-
-      uint32_t rawNodeCount=0;
-      if(!scanner.Read(rawNodeCount)) {
-          progress.Error("Error reading node count in 'rawnodes.dat'");
-          return false;
-      }
-
-      // Build a dictionary for node text data
-      marisa::Keyset keyset;
-
-      for(uint32_t n=1; n <= rawNodeCount; n++) {
-          RawNode rawNode;
-          if (!rawNode.Read(scanner)) {
-            progress.Error(std::string("Error while reading data entry ")+
-                           NumberToString(n)+" of "+
-                           NumberToString(rawNodeCount)+
-                           " in file '"+
-                           scanner.GetFilename()+"'");
-            return false;
-          }
-
-          if (rawNode.GetType()!=typeIgnore &&
-              !typeConfig.GetTypeInfo(rawNode.GetType()).GetIgnore()) {
-
-              // Use the tags for this raw node to see if
-              // we want to save any string attributes
-              std::vector<Tag> tags(rawNode.GetTags());
-              std::string name;
-              std::string name_alt;
-              cutNameDataFromTags(typeConfig,tags,name,name_alt);
-
-              // save to keyset
-              if(!name.empty()) {
-                  keyset.push_back(name.c_str());
-              }
-              if(!name_alt.empty()) {
-                  keyset.push_back(name_alt.c_str());
-              }
-          }
-      }
-      if(!scanner.Close()) {
-          progress.Error("Failed to close rawnodes.dat file");
-      }
-
-      // build trie from keyset
-      try {
-          trie.build(keyset,
-                     MARISA_DEFAULT_NUM_TRIES |
-                     MARISA_DEFAULT_TAIL |
-                     MARISA_LABEL_ORDER |
-                     MARISA_DEFAULT_CACHE);
-      }
-      catch(marisa::Exception const &ex) {
-          std::string err_msg="Error building node text data dict:";
-          err_msg.append(ex.what());
-          progress.Error(err_msg);
-          return false;
-      }
-
-      // write trie to file
-      std::string file_trie=
-              AppendFileToDir(parameter.GetDestinationDirectory(),
-                              "nodetext.dict");
-      try {
-          trie.save(file_trie.c_str());
-      }
-      catch(marisa::Exception const &ex) {
-          std::string err_msg="Error saving node text data dict: ";
-          err_msg.append(ex.what());
-          progress.Error(err_msg);
-          return false;
-      }
-
-      return true;
-  }
-
   bool NodeDataGenerator::Import(const ImportParameter& parameter,
                                  Progress& progress,
                                  const TypeConfig& typeConfig)
   {
-      // Build a dictionary for node text data
-      marisa::Trie trie;
-      genNodeTextDict(parameter,progress,typeConfig,trie);
-
-
     double   minLon=-10.0;
     double   minLat=-10.0;
     double   maxLon=10.0;
@@ -183,10 +82,20 @@ namespace osmscout {
 
     writer.Write(nodesWrittenCount);
 
-//    // Create an index for the node text dictionary
-//    // that lets us lookup nodes based on dict key ids
-//    OSMSCOUT_HASHMAP<TextId,std::vector<FileOffset> > table_dictkey_offsets;
-//    OSMSCOUT_HASHMAP<TextId,std::vector<FileOffset> >::iterator table_it;
+    // Open up text data files to lookup text ids
+    marisa::Trie trie_poi;
+    marisa::Trie trie_loc;
+    marisa::Trie trie_region;
+    marisa::Trie trie_other;
+
+    if(!loadTextDataTries(parameter,
+                          progress,
+                          trie_poi,
+                          trie_loc,
+                          trie_region,
+                          trie_other)) {
+        return false;
+    }
 
     for (uint32_t n=1; n<=rawNodeCount; n++) {
       progress.SetProgress(n,rawNodeCount);
@@ -225,62 +134,30 @@ namespace osmscout {
         node.SetType(rawNode.GetType());
         node.SetCoords(rawNode.GetCoords());
 
-        // Save string attributes associated with the node
+        // Save string attributes associated with the node. We
+        // need to remove name strings before calling SetTags().
         std::string name;
         std::string name_alt;
         cutNameDataFromTags(typeConfig,tags,name,name_alt);
 
-        // need to set tags before settings nameid or namealtid!
+        // SetTags must be called before setting
+        // NameId or NameAltId
         node.SetTags(progress,
                      typeConfig,
                      tags);
 
-        TextId dict_name_id,dict_name_alt_id;
-
-        if(!name.empty()) {
-            // save the dict key id for this name text
-            marisa::Agent agent;
-            agent.set_query(name.c_str());
-
-            // TODO Note:
-            // In the libmarisa documentation its implied that
-            // 'Trie::lookup()' doesn't restore the key id but
-            // it does seem to (maybe it only applies to the key
-            // text?, need to verify)
-            if(trie.lookup(agent)) {
-                dict_name_id=static_cast<TextId>(agent.key().id());
-                node.SetNameId(dict_name_id);
-//                progress.Info("DEBUG:"+NumberToString(dict_name_id));
-            }
-            else {
-                std::string err_msg =
-                        "Fatal: Could not lookup node text in dict: "+
-                        NumberToString(rawNode.GetId())+": "+name;
-                progress.Error(err_msg);
-                return false;
-            }
+        // Save TextIds to node
+        if(!saveNodeTextIds(progress,
+                            typeConfig,
+                            name,
+                            name_alt,
+                            node,
+                            trie_poi,
+                            trie_loc,
+                            trie_region,
+                            trie_other)) {
+            return false;
         }
-        if(!name_alt.empty()) {
-            // save the dict key id for this name alt text
-            marisa::Agent agent;
-            agent.set_query(name_alt.c_str());
-
-            if(trie.lookup(agent)) {
-                dict_name_alt_id=static_cast<TextId>(agent.key().id());
-                node.SetNameAltId(dict_name_alt_id);
-//                progress.Info("DEBUG:"+NumberToString(dict_name_alt_id));
-            }
-            else {
-                std::string err_msg =
-                        "Fatal: Could not lookup node text in dict: "+
-                        NumberToString(rawNode.GetId())+": "+name_alt;
-                progress.Error(err_msg);
-                return false;
-            }
-        }
-
-//        std::string smsg=(node.GetAttributes().HasName()) ? "Yes" : "No";
-//        progress.Info("DEBUG:"+smsg);
 
         FileOffset fileOffset;
 
@@ -296,29 +173,6 @@ namespace osmscout {
             progress.Error(std::string("Error trying to write node:")+
                            NumberToString(rawNode.GetId()));
         }
-
-//        // save the dict id and FileOffsets
-//        // do these fileoffsets match the final nodes.dat? NO
-//        if(!name.empty()) {
-//            table_it = table_dictkey_offsets.find(dict_name_id);
-//            if(table_it == table_dictkey_offsets.end()) {
-//                // no entries for this id yet, create a new one
-//                std::pair<TextId,std::vector<FileOffset> > data;
-//                data.first = dict_name_id;
-//                table_it = table_dictkey_offsets.insert(data);
-//            }
-//            table_it->second.push_back(fileOffset);
-//        }
-//        if(!name_alt.empty()) {
-//            table_it = table_dictkey_offsets.find(dict_name_alt_id);
-//            if(table_it == table_dictkey_offsets.end()) {
-//                // no entries for this id yet, create a new one
-//                std::pair<TextId,std::vector<FileOffset> > data;
-//                data.first = dict_name_alt_id;
-//                table_it = table_dictkey_offsets.insert(data);
-//            }
-//            table_it->second.push_back(fileOffset);
-//        }
 
         nodesWrittenCount++;
       }
@@ -362,6 +216,128 @@ namespace osmscout {
     return true;
   }
 
+  bool NodeDataGenerator::loadTextDataTries(ImportParameter const &parameter,
+                                            Progress &progress,
+                                            marisa::Trie &trie_poi,
+                                            marisa::Trie &trie_loc,
+                                            marisa::Trie &trie_region,
+                                            marisa::Trie &trie_other)
+  {
+      std::vector<std::string> list_trie_files;
+      list_trie_files.push_back(AppendFileToDir(parameter.GetDestinationDirectory(),
+                                                "poitext.dat"));
+
+      list_trie_files.push_back(AppendFileToDir(parameter.GetDestinationDirectory(),
+                                                "loctext.dat"));
+
+      list_trie_files.push_back(AppendFileToDir(parameter.GetDestinationDirectory(),
+                                                "regiontext.dat"));
+
+      list_trie_files.push_back(AppendFileToDir(parameter.GetDestinationDirectory(),
+                                                "othertext.dat"));
+
+      std::vector<marisa::Trie*> list_tries;
+      list_tries.push_back(&trie_poi);
+      list_tries.push_back(&trie_loc);
+      list_tries.push_back(&trie_region);
+      list_tries.push_back(&trie_other);
+
+      for(size_t i=0; i < list_tries.size(); i++) {
+          try {
+              list_tries[i]->load(list_trie_files[i].c_str());
+          }
+          catch(marisa::Exception const &ex) {
+              std::string err_msg=
+                      "Error opening "+list_trie_files[i]+
+                      ","+std::string(ex.what());
+              progress.Error(err_msg);
+              return false;
+          }
+      }
+      return true;
+  }
+
+  bool NodeDataGenerator::saveNodeTextIds(Progress &progress,
+                                          TypeConfig const &typeConfig,
+                                          std::string const &name,
+                                          std::string const &name_alt,
+                                          Node &node,
+                                          marisa::Trie &trie_poi,
+                                          marisa::Trie &trie_loc,
+                                          marisa::Trie &trie_region,
+                                          marisa::Trie &trie_other)
+  {
+      marisa::Trie * trie;
+      TypeInfo typeInfo=typeConfig.GetTypeInfo(node.GetType());
+
+      // We use 32-bit integers to save each key id,
+      // but set the first two MSB to denote which trie
+      // the key belongs to (poi,loc,region,other)
+
+      // The TextDataGenerator class already ensures
+      // that no trie has a keycount > (2^30 -1), ie
+      // the 2 MSB are 0
+
+      uint32_t setbits=0;
+
+      if(typeInfo.GetIndexAsPOI()) {
+          trie = &trie_poi;
+          setbits |= (1 << ((sizeof(uint32_t)*8)-2));
+      }
+      else if(typeInfo.GetIndexAsLocation()) {
+          trie = &trie_loc;
+          setbits |= (1 << ((sizeof(uint32_t)*8)-1));
+      }
+      else if(typeInfo.GetIndexAsRegion()) {
+          trie = &trie_region;
+          setbits |= (1 << ((sizeof(uint32_t)*8)-1));
+          setbits |= (1 << ((sizeof(uint32_t)*8)-2));
+      }
+      else {
+          trie = &trie_other;
+      }
+
+      if(!name.empty()) {
+          // save the dict key id for this name text
+          marisa::Agent agent;
+          agent.set_query(name.c_str());
+
+          // TODO Note:
+          // In the libmarisa documentation its implied that
+          // 'Trie::lookup()' doesn't restore the key id but
+          // it does seem to (maybe it only applies to the key
+          // text?, need to verify)
+          if(trie->lookup(agent)) {
+              TextId textid=static_cast<TextId>(agent.key().id());
+              textid |= setbits;
+              node.SetNameId(textid);
+          }
+          else {
+              std::string err_msg = "Error looking up name text: "+name;
+              progress.Error(err_msg);
+              return false;
+          }
+      }
+      if(!name_alt.empty()) {
+          // save the dict key id for this name alt text
+          marisa::Agent agent;
+          agent.set_query(name_alt.c_str());
+
+          if(trie->lookup(agent)) {
+              TextId textid=static_cast<TextId>(agent.key().id());
+              textid |= setbits;
+              node.SetNameAltId(textid);
+          }
+          else {
+              std::string err_msg = "Error looking up name_alt text: "+name_alt;
+              progress.Error(err_msg);
+              return false;
+          }
+      }
+
+      return true;
+  }
+
   void NodeDataGenerator::cutNameDataFromTags(TypeConfig const &typeConfig,
                                               std::vector<Tag> &tags,
                                               std::string &name,
@@ -394,5 +370,7 @@ namespace osmscout {
           }
       }
   }
+
+
 
 }
