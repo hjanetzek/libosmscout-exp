@@ -17,13 +17,14 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
+#include <osmscout/Way.h>
 #include <osmscout/Node.h>
+#include <osmscout/Area.h>
 #include <osmscout/ObjectRef.h>
 #include <osmscout/util/File.h>
 #include <osmscout/util/FileScanner.h>
 #include <osmscout/util/FileWriter.h>
 #include <osmscout/util/String.h>
-#include <osmscout/import/RawNode.h>
 #include <osmscout/import/GenTextDat.h>
 
 #include <marisa.h>
@@ -56,6 +57,25 @@ namespace osmscout
                                        keyset_other)) {
             return false;
         }
+        if(!this->addWayTextToKeysets(parameter,
+                                      progress,
+                                      typeConfig,
+                                      keyset_poi,
+                                      keyset_loc,
+                                      keyset_region,
+                                      keyset_other)) {
+            return false;
+        }
+        if(!this->addAreaTextToKeysets(parameter,
+                                       progress,
+                                       typeConfig,
+                                       keyset_poi,
+                                       keyset_loc,
+                                       keyset_region,
+                                       keyset_other)) {
+            return false;
+        }
+
 
         // build and save tries
         std::vector<marisa::Keyset*> list_keysets;
@@ -117,7 +137,7 @@ namespace osmscout
     {
         progress.SetAction("Getting node text data");
 
-        // Open rawnodes.dat
+        // Open nodes.dat
         std::string file_nodes_dat=
                 AppendFileToDir(parameter.GetDestinationDirectory(),
                                 "nodes.dat");
@@ -204,6 +224,210 @@ namespace osmscout
         return true;
     }
 
+    bool TextDataGenerator::addWayTextToKeysets(ImportParameter const &parameter,
+                                                Progress &progress,
+                                                TypeConfig const &typeConfig,
+                                                marisa::Keyset &keyset_poi,
+                                                marisa::Keyset &keyset_loc,
+                                                marisa::Keyset &keyset_region,
+                                                marisa::Keyset &keyset_other)
+    {
+        progress.SetAction("Getting way text data");
+
+        // Open ways.dat
+        std::string file_ways_dat=
+                AppendFileToDir(parameter.GetDestinationDirectory(),
+                                "ways.dat");
+
+        FileScanner scanner;
+        if(!scanner.Open(file_ways_dat,
+                         FileScanner::Sequential,
+                         false)) {
+            progress.Error("Cannot open 'ways.dat'");
+            return false;
+        }
+
+        uint32_t way_count=0;
+        if(!scanner.Read(way_count)) {
+            progress.Error("Error reading way count in 'ways.dat'");
+            return false;
+        }
+
+        // Iterate through each way and add text
+        // data to the corresponding keyset
+        for(uint32_t n=1; n <= way_count; n++) {
+            Way way;
+            if (!way.Read(scanner)) {
+              progress.Error(std::string("Error while reading data entry ")+
+                             NumberToString(n)+" of "+
+                             NumberToString(way_count)+
+                             " in file '"+
+                             scanner.GetFilename()+"'");
+              return false;
+            }
+
+            if(way.GetType() != typeIgnore &&
+               !typeConfig.GetTypeInfo(way.GetType()).GetIgnore()) {
+
+                WayAttributes attr=way.GetAttributes();
+                if(attr.GetName().empty() &&
+                   attr.GetNameAlt().empty() &&
+                   attr.GetRefName().empty()) {
+                    continue;
+                }
+
+                // Save name attributes of this node
+                // in the right keyset
+                TypeInfo typeInfo=typeConfig.GetTypeInfo(way.GetType());
+                marisa::Keyset * keyset;
+                if(typeInfo.GetIndexAsPOI()) {
+                    keyset = &keyset_poi;
+                }
+                else if(typeInfo.GetIndexAsLocation()) {
+                    keyset = &keyset_loc;
+                }
+                else if(typeInfo.GetIndexAsRegion()) {
+                    keyset = &keyset_region;
+                }
+                else {
+                    keyset = &keyset_other;
+                }
+
+                if(!(attr.GetName().empty())) {
+                    std::string keystr;
+                    if(buildKeyStr(attr.GetName(),
+                                   way.GetFileOffset(),
+                                   refWay,
+                                   keystr))
+                    {
+                        keyset->push_back(keystr.c_str(),
+                                          keystr.length());
+                    }
+                }
+                if(!(attr.GetNameAlt().empty())) {
+                    std::string keystr;
+                    if(buildKeyStr(attr.GetNameAlt(),
+                                   way.GetFileOffset(),
+                                   refWay,
+                                   keystr))
+                    {
+                        keyset->push_back(keystr.c_str(),
+                                          keystr.length());
+                    }
+                }
+                if(!(attr.GetRefName().empty())) {
+                    std::string keystr;
+                    if(buildKeyStr(attr.GetRefName(),
+                                   way.GetFileOffset(),
+                                   refWay,
+                                   keystr))
+                    {
+                        keyset->push_back(keystr.c_str(),
+                                          keystr.length());
+                    }
+                }
+            }
+        }
+        scanner.Close();
+
+        return true;
+    }
+
+    bool TextDataGenerator::addAreaTextToKeysets(ImportParameter const &parameter,
+                                                 Progress &progress,
+                                                 TypeConfig const &typeConfig,
+                                                 marisa::Keyset &keyset_poi,
+                                                 marisa::Keyset &keyset_loc,
+                                                 marisa::Keyset &keyset_region,
+                                                 marisa::Keyset &keyset_other)
+    {
+        progress.SetAction("Getting area text data");
+
+        // Open areas.dat
+        std::string file_areas_dat=
+                AppendFileToDir(parameter.GetDestinationDirectory(),
+                                "areas.dat");
+
+        FileScanner scanner;
+        if(!scanner.Open(file_areas_dat,
+                         FileScanner::Sequential,
+                         false)) {
+            progress.Error("Cannot open 'areas.dat'");
+            return false;
+        }
+
+        uint32_t area_count=0;
+        if(!scanner.Read(area_count)) {
+            progress.Error("Error reading area count in 'areas.dat'");
+            return false;
+        }
+
+        // Iterate through each area and add text
+        // data to the corresponding keyset
+        for(uint32_t n=1; n <= area_count; n++) {
+            Area area;
+            if(!area.Read(scanner)) {
+                progress.Error(std::string("Error while reading data entry ")+
+                               NumberToString(n)+" of "+
+                               NumberToString(area_count)+
+                               " in file '"+
+                               scanner.GetFilename()+"'");
+                return false;
+            }
+
+            // Rings might have different types and names
+            // so we check  each ring individually
+            for(size_t r=0; r < area.rings.size(); r++) {
+
+                TypeId areaType=area.rings[r].GetType();
+                TypeInfo areaTypeInfo=typeConfig.GetTypeInfo(areaType);
+                if(areaType==typeIgnore || areaTypeInfo.GetIgnore()) {
+                    continue;
+                }
+
+                marisa::Keyset * keyset;
+                if(areaTypeInfo.GetIndexAsPOI()) {
+                    keyset = &keyset_poi;
+                }
+                else if(areaTypeInfo.GetIndexAsLocation()) {
+                    keyset = &keyset_loc;
+                }
+                else if(areaTypeInfo.GetIndexAsRegion()) {
+                    keyset = &keyset_region;
+                }
+                else {
+                    keyset = &keyset_other;
+                }
+
+                AreaAttributes attr=area.rings[r].GetAttributes();
+                if(!(attr.GetName().empty())) {
+                    std::string keystr;
+                    if(buildKeyStr(attr.GetName(),
+                                   area.GetFileOffset(),
+                                   refArea,
+                                   keystr))
+                    {
+                        keyset->push_back(keystr.c_str(),
+                                          keystr.length());
+                    }
+                }
+                if(!(attr.GetNameAlt().empty())) {
+                    std::string keystr;
+                    if(buildKeyStr(attr.GetNameAlt(),
+                                   area.GetFileOffset(),
+                                   refArea,
+                                   keystr))
+                    {
+                        keyset->push_back(keystr.c_str(),
+                                          keystr.length());
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     bool TextDataGenerator::buildKeyStr(std::string const &text,
                                         FileOffset const offset,
                                         RefType const reftype,
@@ -222,15 +446,15 @@ namespace osmscout
         // ASCII 0x03 'ETX', means a area
 
         if(reftype == refNode) {
-            char c=1;
+            char c=static_cast<char>(refNode);
             keystr.push_back(c);
         }
         else if(reftype == refWay) {
-            char c=2;
+            char c=static_cast<char>(refWay);
             keystr.push_back(c);
         }
         else if(reftype == refArea) {
-            char c=3;
+            char c=static_cast<char>(refArea);
             keystr.push_back(c);
         }
         else {

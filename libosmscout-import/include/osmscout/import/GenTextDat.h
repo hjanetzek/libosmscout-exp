@@ -43,6 +43,22 @@ namespace osmscout
                                   marisa::Keyset &keyset_region,
                                   marisa::Keyset &keyset_other);
 
+        bool addWayTextToKeysets(ImportParameter const &parameter,
+                                 Progress &progress,
+                                 TypeConfig const &typeConfig,
+                                 marisa::Keyset &keyset_poi,
+                                 marisa::Keyset &keyset_loc,
+                                 marisa::Keyset &keyset_region,
+                                 marisa::Keyset &keyset_other);
+
+        bool addAreaTextToKeysets(ImportParameter const &parameter,
+                                  Progress &progress,
+                                  TypeConfig const &typeConfig,
+                                  marisa::Keyset &keyset_poi,
+                                  marisa::Keyset &keyset_loc,
+                                  marisa::Keyset &keyset_region,
+                                  marisa::Keyset &keyset_other);
+
         bool buildKeyStr(std::string const &text,
                          FileOffset const offset,
                          RefType const reftype,

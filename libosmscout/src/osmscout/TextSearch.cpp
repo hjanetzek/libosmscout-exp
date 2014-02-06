@@ -23,7 +23,7 @@ bool TextSearch::Load(std::string const &path)
     list_dat_files.push_back(proper_path+"textother.dat");
 
     m_list_tries.push_back(&m_trie_poi);
-    m_list_tries.push_back(&m_trie_poi);
+    m_list_tries.push_back(&m_trie_loc);
     m_list_tries.push_back(&m_trie_region);
     m_list_tries.push_back(&m_trie_other);
 
