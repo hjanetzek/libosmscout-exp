@@ -28,7 +28,7 @@
 
 namespace osmscout
 {
-    class TextSearch
+    class OSMSCOUT_API TextSearch
     {
     private:
         struct TrieInfo

@@ -21,6 +21,7 @@ nobase_include_HEADERS= osmscout/private/Config.h \
                         osmscout/import/GenWaterIndex.h \
                         osmscout/import/GenWayAreaDat.h \
                         osmscout/import/GenWayWayDat.h \
+                        osmscout/import/GenTextDat.h \
                         osmscout/import/SortDat.h \
                         osmscout/import/SortAreaDat.h \
                         osmscout/import/SortNodeDat.h \

@@ -67,7 +67,8 @@ nobase_include_HEADERS= osmscout/private/Config.h \
                         osmscout/Database.h \
                         osmscout/DebugDatabase.h \
                         osmscout/Router.h \
-                        osmscout/SRTM.h
+                        osmscout/SRTM.h \
+                        osmscout/TextSearch.h
 
 #ifdef OSMSCOUT_HAVE_SSE2
 nobase_include_HEADERS+=osmscout/system/SSEMath.h

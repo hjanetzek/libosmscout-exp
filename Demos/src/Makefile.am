@@ -3,7 +3,8 @@ bin_PROGRAMS = AddressLookup \
                ResourceConsumption \
                Routing \
                LookupPOI \
-               Srtm
+               Srtm \
+               LookupText
 
 if HAVE_LIB_OSMSCOUTMAPSVG
 bin_PROGRAMS += DrawMapSVG
@@ -120,3 +121,6 @@ Srtm_SOURCES = Srtm.cpp
 Srtm_CXXFLAGS = $(LIBOSMSCOUT_CFLAGS)
 Srtm_LDADD = $(LIBOSMSCOUT_LIBS)
 
+LookupText_SOURCES = LookupText.cpp
+LookupText_CXXFLAGS = $(LIBOSMSCOUT_CFLAGS)
+LookupText_LDADD = $(LIBOSMSCOUT_LIBS)

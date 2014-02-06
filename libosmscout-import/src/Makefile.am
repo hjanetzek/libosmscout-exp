@@ -35,6 +35,7 @@ libosmscoutimport_la_SOURCES = osmscout/import/RawCoastline.cpp \
                                osmscout/import/GenWaterIndex.cpp \
                                osmscout/import/GenWayAreaDat.cpp \
                                osmscout/import/GenWayWayDat.cpp \
+                               osmscout/import/GenTextDat.cpp \
                                osmscout/import/SortDat.cpp \
                                osmscout/import/SortAreaDat.cpp \
                                osmscout/import/SortNodeDat.cpp \
