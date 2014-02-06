@@ -31,6 +31,12 @@
 
 namespace osmscout
 {
+    TextDataGenerator::TextDataGenerator() :
+        m_sz_offset(4)
+    {
+        // no code
+    }
+
     std::string TextDataGenerator::GetDescription() const
     {
         return "Generate text data files 'text(poi,loc,region,other).dat'";
@@ -41,48 +47,45 @@ namespace osmscout
                                  Progress &progress,
                                  TypeConfig const &typeConfig)
     {
-        // create keysets for text data
-        marisa::Keyset keyset_poi;
-        marisa::Keyset keyset_loc;
-        marisa::Keyset keyset_region;
-        marisa::Keyset keyset_other;
+        if(!this->setFileOffsetSize(parameter,
+                                    progress)) {
+            return false;
+        }
+        progress.Info("Using "+NumberToString(m_sz_offset)+"-byte offsets");
 
         // add node text data
         if(!this->addNodeTextToKeysets(parameter,
                                        progress,
-                                       typeConfig,
-                                       keyset_poi,
-                                       keyset_loc,
-                                       keyset_region,
-                                       keyset_other)) {
+                                       typeConfig)) {
             return false;
         }
         if(!this->addWayTextToKeysets(parameter,
                                       progress,
-                                      typeConfig,
-                                      keyset_poi,
-                                      keyset_loc,
-                                      keyset_region,
-                                      keyset_other)) {
+                                      typeConfig)) {
             return false;
         }
         if(!this->addAreaTextToKeysets(parameter,
                                        progress,
-                                       typeConfig,
-                                       keyset_poi,
-                                       keyset_loc,
-                                       keyset_region,
-                                       keyset_other)) {
+                                       typeConfig)) {
             return false;
         }
 
+        // Create a file offset size string to indicate
+        // how many bytes are used for offsets in the trie
+
+        // We use an ASCII control character to denote
+        // the start of the sz offset key:
+        // 0x04: EOT
+        std::string sz_offset_str;
+        sz_offset_str.push_back(4);
+        sz_offset_str+=NumberToString(m_sz_offset);
 
         // build and save tries
         std::vector<marisa::Keyset*> list_keysets;
-        list_keysets.push_back(&keyset_poi);
-        list_keysets.push_back(&keyset_loc);
-        list_keysets.push_back(&keyset_region);
-        list_keysets.push_back(&keyset_other);
+        list_keysets.push_back(&m_keyset_poi);
+        list_keysets.push_back(&m_keyset_loc);
+        list_keysets.push_back(&m_keyset_region);
+        list_keysets.push_back(&m_keyset_other);
 
         std::vector<std::string> list_trie_files;
         list_trie_files.push_back(AppendFileToDir(parameter.GetDestinationDirectory(),
@@ -98,6 +101,10 @@ namespace osmscout
                                                   "textother.dat"));
 
         for(size_t i=0; i < list_keysets.size(); i++) {
+            // add sz_offset to the keyset
+            list_keysets[i]->push_back(sz_offset_str.c_str(),
+                                       sz_offset_str.length());
+
             marisa::Trie trie;
             try {
                 trie.build(*(list_keysets[i]),
@@ -127,13 +134,132 @@ namespace osmscout
         return true;
     }
 
+    bool TextDataGenerator::setFileOffsetSize(ImportParameter const &parameter,
+                                              Progress &progress)
+    {
+        progress.SetAction("Calculating required FileOffset size...");
+
+        FileScanner scanner;
+
+        uint8_t min_sz_node_offset=0;
+        uint8_t min_sz_way_offset=0;
+        uint8_t min_sz_area_offset=0;
+
+        // The dat files use a 4 byte number to
+        // indicate data count at the beginning
+        // of the file
+        uint32_t node_count=0;
+        uint32_t way_count=0;
+        uint32_t area_count=0;
+
+        FileOffset node_filesize=0;
+        FileOffset way_filesize=0;
+        FileOffset area_filesize=0;
+
+        // node count
+        std::string file_nodes_dat=
+                AppendFileToDir(parameter.GetDestinationDirectory(),
+                                "nodes.dat");
+
+        if(!scanner.Open(file_nodes_dat,
+                         FileScanner::Sequential,
+                         false)) {
+            progress.Error("Cannot open 'nodes.dat'");
+            return false;
+        }
+        if(!scanner.Read(node_count)) {
+            progress.Error("Error reading node count in 'nodes.dat'");
+            return false;
+        }
+        // seek to end of file (better way to do this?)
+        for(uint32_t i=0; i < node_count; i++) {
+            Node node;
+            if(!node.Read(scanner)) {
+                progress.Error("Error seeking to end of 'nodes'.dat!");
+                return false;
+            }
+        }
+        scanner.GetPos(node_filesize);
+        scanner.Close();
+
+
+        // way count
+        std::string file_ways_dat=
+                AppendFileToDir(parameter.GetDestinationDirectory(),
+                                "ways.dat");
+
+        if(!scanner.Open(file_ways_dat,
+                         FileScanner::Sequential,
+                         false)) {
+            progress.Error("Cannot open 'ways.dat'");
+            return false;
+        }
+        if(!scanner.Read(way_count)) {
+            progress.Error("Error reading way count in 'ways.dat'");
+            return false;
+        }
+        // seek to end of file
+        for(uint32_t i=0; i < way_count; i++) {
+            Way way;
+            if(!way.Read(scanner)) {
+                progress.Error("Error seeking to end of 'ways'.dat!");
+                return false;
+            }
+        }
+        scanner.GetPos(way_filesize);
+        scanner.Close();
+
+        // area count
+        std::string file_areas_dat=
+                AppendFileToDir(parameter.GetDestinationDirectory(),
+                                "areas.dat");
+
+        if(!scanner.Open(file_areas_dat,
+                         FileScanner::Sequential,
+                         false)) {
+            progress.Error("Cannot open 'areas.dat'");
+            return false;
+        }
+        if(!scanner.Read(area_count)) {
+            progress.Error("Error reading area count in 'areas.dat'");
+            return false;
+        }
+        // seek to end of file
+        for(uint32_t i=0; i < area_count; i++) {
+            Area area;
+            if(!area.Read(scanner)) {
+                progress.Error("Error seeking to end of 'areas'.dat!");
+                return false;
+            }
+        }
+        scanner.GetPos(area_filesize);
+        scanner.Close();
+
+        // Check if we need to increase num. bytes used
+        // to store offsets
+        min_sz_node_offset = getMinBytesForValue(node_filesize);
+        min_sz_way_offset = getMinBytesForValue(way_filesize);
+        min_sz_area_offset = getMinBytesForValue(area_filesize);
+
+        progress.Info("Node filesize is " + NumberToString(node_filesize) + " bytes, "+
+                      "req. " + NumberToString(min_sz_node_offset) +" bytes");
+
+        progress.Info("Way filesize is " + NumberToString(way_filesize) + " bytes, "+
+                      "req. " + NumberToString(min_sz_way_offset) +" bytes");
+
+        progress.Info("Area filesize is " + NumberToString(area_filesize) + " bytes, "+
+                      "req. " + NumberToString(min_sz_area_offset) +" bytes");
+
+        m_sz_offset = 0;
+        m_sz_offset = std::max(min_sz_node_offset,min_sz_way_offset);
+        m_sz_offset = std::max(m_sz_offset,min_sz_area_offset);
+
+        return true;
+    }
+
     bool TextDataGenerator::addNodeTextToKeysets(ImportParameter const &parameter,
                                                  Progress &progress,
-                                                 TypeConfig const &typeConfig,
-                                                 marisa::Keyset &keyset_poi,
-                                                 marisa::Keyset &keyset_loc,
-                                                 marisa::Keyset &keyset_region,
-                                                 marisa::Keyset &keyset_other)
+                                                 TypeConfig const &typeConfig)
     {
         progress.SetAction("Getting node text data");
 
@@ -161,20 +287,20 @@ namespace osmscout
         for(uint32_t n=1; n <= node_count; n++) {
             Node node;
             if (!node.Read(scanner)) {
-              progress.Error(std::string("Error while reading data entry ")+
-                             NumberToString(n)+" of "+
-                             NumberToString(node_count)+
-                             " in file '"+
-                             scanner.GetFilename()+"'");
-              return false;
+                progress.Error(std::string("Error while reading data entry ")+
+                               NumberToString(n)+" of "+
+                               NumberToString(node_count)+
+                               " in file '"+
+                               scanner.GetFilename()+"'");
+                return false;
             }
 
             if(node.GetType() != typeIgnore &&
-               !typeConfig.GetTypeInfo(node.GetType()).GetIgnore()) {
+                    !typeConfig.GetTypeInfo(node.GetType()).GetIgnore()) {
 
                 NodeAttributes attr=node.GetAttributes();
                 if(attr.GetName().empty() &&
-                   attr.GetNameAlt().empty()) {
+                        attr.GetNameAlt().empty()) {
                     continue;
                 }
 
@@ -183,16 +309,16 @@ namespace osmscout
                 TypeInfo typeInfo=typeConfig.GetTypeInfo(node.GetType());
                 marisa::Keyset * keyset;
                 if(typeInfo.GetIndexAsPOI()) {
-                    keyset = &keyset_poi;
+                    keyset = &m_keyset_poi;
                 }
                 else if(typeInfo.GetIndexAsLocation()) {
-                    keyset = &keyset_loc;
+                    keyset = &m_keyset_loc;
                 }
                 else if(typeInfo.GetIndexAsRegion()) {
-                    keyset = &keyset_region;
+                    keyset = &m_keyset_region;
                 }
                 else {
-                    keyset = &keyset_other;
+                    keyset = &m_keyset_other;
                 }
 
                 if(!(attr.GetName().empty())) {
@@ -226,11 +352,7 @@ namespace osmscout
 
     bool TextDataGenerator::addWayTextToKeysets(ImportParameter const &parameter,
                                                 Progress &progress,
-                                                TypeConfig const &typeConfig,
-                                                marisa::Keyset &keyset_poi,
-                                                marisa::Keyset &keyset_loc,
-                                                marisa::Keyset &keyset_region,
-                                                marisa::Keyset &keyset_other)
+                                                TypeConfig const &typeConfig)
     {
         progress.SetAction("Getting way text data");
 
@@ -281,16 +403,16 @@ namespace osmscout
                 TypeInfo typeInfo=typeConfig.GetTypeInfo(way.GetType());
                 marisa::Keyset * keyset;
                 if(typeInfo.GetIndexAsPOI()) {
-                    keyset = &keyset_poi;
+                    keyset = &m_keyset_poi;
                 }
                 else if(typeInfo.GetIndexAsLocation()) {
-                    keyset = &keyset_loc;
+                    keyset = &m_keyset_loc;
                 }
                 else if(typeInfo.GetIndexAsRegion()) {
-                    keyset = &keyset_region;
+                    keyset = &m_keyset_region;
                 }
                 else {
-                    keyset = &keyset_other;
+                    keyset = &m_keyset_other;
                 }
 
                 if(!(attr.GetName().empty())) {
@@ -335,11 +457,7 @@ namespace osmscout
 
     bool TextDataGenerator::addAreaTextToKeysets(ImportParameter const &parameter,
                                                  Progress &progress,
-                                                 TypeConfig const &typeConfig,
-                                                 marisa::Keyset &keyset_poi,
-                                                 marisa::Keyset &keyset_loc,
-                                                 marisa::Keyset &keyset_region,
-                                                 marisa::Keyset &keyset_other)
+                                                 TypeConfig const &typeConfig)
     {
         progress.SetAction("Getting area text data");
 
@@ -387,16 +505,16 @@ namespace osmscout
 
                 marisa::Keyset * keyset;
                 if(areaTypeInfo.GetIndexAsPOI()) {
-                    keyset = &keyset_poi;
+                    keyset = &m_keyset_poi;
                 }
                 else if(areaTypeInfo.GetIndexAsLocation()) {
-                    keyset = &keyset_loc;
+                    keyset = &m_keyset_loc;
                 }
                 else if(areaTypeInfo.GetIndexAsRegion()) {
-                    keyset = &keyset_region;
+                    keyset = &m_keyset_region;
                 }
                 else {
-                    keyset = &keyset_other;
+                    keyset = &m_keyset_other;
                 }
 
                 AreaAttributes attr=area.rings[r].GetAttributes();
@@ -441,9 +559,9 @@ namespace osmscout
 
         // Use ASCII control characters to denote
         // the start of a file offset:
-        // ASCII 0x01 'SOH', means a node
-        // ASCII 0x02 'STX', means a way
-        // ASCII 0x03 'ETX', means a area
+        // ASCII 0x01 'SOH' - corresponds to refNode
+        // ASCII 0x02 'STX' - corresponds to refArea
+        // ASCII 0x03 'ETX' - corresponds to refWay
 
         if(reftype == refNode) {
             char c=static_cast<char>(refNode);
@@ -474,20 +592,26 @@ namespace osmscout
         // LSB was written first, it would have four
         // branches immediately from its root.
 
-        char buffer[8];
-        buffer[7]=((offset >>  0) & 0xff);
-        buffer[6]=((offset >>  8) & 0xff);
-        buffer[5]=((offset >> 16) & 0xff);
-        buffer[4]=((offset >> 24) & 0xff);
-        buffer[3]=((offset >> 32) & 0xff);
-        buffer[2]=((offset >> 40) & 0xff);
-        buffer[1]=((offset >> 48) & 0xff);
-        buffer[0]=((offset >> 56) & 0xff);
+        char buffer[m_sz_offset];
+        for(uint8_t i=0; i < m_sz_offset; i++) {
+            uint8_t r=m_sz_offset-1-i;
+            buffer[r] = ((offset >> (i*8)) & 0xff);
+        }
 
-        for(uint8_t i=0; i < 8; i++) {
+        for(uint8_t i=0; i < m_sz_offset; i++) {
             keystr.push_back(buffer[i]);
         }
 
         return true;
+    }
+
+    uint8_t TextDataGenerator::getMinBytesForValue(uint64_t val) const
+    {
+        uint8_t n=0;
+        while(val != 0) {
+            val >>= 8;
+            n++;
+        }
+        return n;
     }
 }

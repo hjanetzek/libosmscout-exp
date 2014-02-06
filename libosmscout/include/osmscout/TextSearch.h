@@ -30,6 +30,19 @@ namespace osmscout
 {
     class TextSearch
     {
+    private:
+        struct TrieInfo
+        {
+            marisa::Trie * trie;
+            std::string file;
+            bool avail;
+
+            TrieInfo() :
+                trie(NULL),
+                avail(false)
+            {}
+        };
+
     public:
 //        typedef std::vector<std::pair<std::string,std::vector<ObjectFileRef> > > ResultsList;
         typedef OSMSCOUT_HASHMAP<std::string,std::vector<ObjectFileRef> > ResultsMap;
@@ -46,16 +59,15 @@ namespace osmscout
                     ResultsMap &results) const;
 
     private:
+
         void splitSearchResult(std::string const &result,
                                std::string &text,
                                ObjectFileRef &ref) const;
 
-        marisa::Trie m_trie_poi;
-        marisa::Trie m_trie_loc;
-        marisa::Trie m_trie_region;
-        marisa::Trie m_trie_other;
-
-        std::vector<marisa::Trie*> m_list_tries;
+        // indicates the size in bytes of the offsets
+        // in the tries
+        uint8_t m_sz_offset;
+        std::vector<TrieInfo> m_list_tries;
     };
 }
 

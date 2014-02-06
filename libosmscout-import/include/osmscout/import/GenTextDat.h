@@ -20,6 +20,7 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
 
+#include <osmscout/Types.h>
 #include <osmscout/ObjectRef.h>
 #include <osmscout/import/Import.h>
 #include <marisa.h>
@@ -29,40 +30,42 @@ namespace osmscout
     class TextDataGenerator : public ImportModule
     {
     public:
+        TextDataGenerator();
+
         std::string GetDescription() const;
 
         bool Import(ImportParameter const &parameter,
                     Progress &progress,
                     TypeConfig const &typeConfig);
 
+    private:
+        bool setFileOffsetSize(ImportParameter const &parameter,
+                               Progress &progress);
+
         bool addNodeTextToKeysets(ImportParameter const &parameter,
                                   Progress &progress,
-                                  TypeConfig const &typeConfig,
-                                  marisa::Keyset &keyset_poi,
-                                  marisa::Keyset &keyset_loc,
-                                  marisa::Keyset &keyset_region,
-                                  marisa::Keyset &keyset_other);
+                                  TypeConfig const &typeConfig);
 
         bool addWayTextToKeysets(ImportParameter const &parameter,
                                  Progress &progress,
-                                 TypeConfig const &typeConfig,
-                                 marisa::Keyset &keyset_poi,
-                                 marisa::Keyset &keyset_loc,
-                                 marisa::Keyset &keyset_region,
-                                 marisa::Keyset &keyset_other);
+                                 TypeConfig const &typeConfig);
 
         bool addAreaTextToKeysets(ImportParameter const &parameter,
                                   Progress &progress,
-                                  TypeConfig const &typeConfig,
-                                  marisa::Keyset &keyset_poi,
-                                  marisa::Keyset &keyset_loc,
-                                  marisa::Keyset &keyset_region,
-                                  marisa::Keyset &keyset_other);
+                                  TypeConfig const &typeConfig);
 
         bool buildKeyStr(std::string const &text,
                          FileOffset const offset,
                          RefType const reftype,
                          std::string &keystr) const;
+
+        uint8_t getMinBytesForValue(uint64_t val) const;
+
+        marisa::Keyset m_keyset_poi;
+        marisa::Keyset m_keyset_loc;
+        marisa::Keyset m_keyset_region;
+        marisa::Keyset m_keyset_other;
+        uint8_t m_sz_offset;
     };
 }
 
