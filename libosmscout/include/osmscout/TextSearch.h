@@ -28,47 +28,50 @@
 
 namespace osmscout
 {
-    class OSMSCOUT_API TextSearch
+  /**
+   A class that allows prefix-based searching
+   of text data indexed during import
+   */
+  class OSMSCOUT_API TextSearch
+  {
+  private:
+    struct TrieInfo
     {
-    private:
-        struct TrieInfo
-        {
-            marisa::Trie * trie;
-            std::string file;
-            bool avail;
+      marisa::Trie * trie;
+      std::string file;
+      bool isAvail;
 
-            TrieInfo() :
-                trie(NULL),
-                avail(false)
-            {}
-        };
-
-    public:
-//        typedef std::vector<std::pair<std::string,std::vector<ObjectFileRef> > > ResultsList;
-        typedef OSMSCOUT_HASHMAP<std::string,std::vector<ObjectFileRef> > ResultsMap;
-
-        TextSearch();
-
-        bool Load(std::string const &path);
-
-        bool Search(std::string const &query,
-                    bool const searchPOIs,
-                    bool const searchLocations,
-                    bool const searchRegions,
-                    bool const searchOther,
-                    ResultsMap &results) const;
-
-    private:
-
-        void splitSearchResult(std::string const &result,
-                               std::string &text,
-                               ObjectFileRef &ref) const;
-
-        // indicates the size in bytes of the offsets
-        // in the tries
-        uint8_t m_sz_offset;
-        std::vector<TrieInfo> m_list_tries;
+      TrieInfo() :
+        trie(NULL),
+        isAvail(false)
+      {
+        // no code
+      }
     };
+
+  public:
+    typedef OSMSCOUT_HASHMAP<std::string,std::vector<ObjectFileRef> > ResultsMap;
+
+    TextSearch();
+
+    bool Load(const std::string &path);
+
+    bool Search(const std::string &query,
+                bool searchPOIs,
+                bool searchLocations,
+                bool searchRegions,
+                bool searchOther,
+                ResultsMap &results) const;
+
+  private:
+    void splitSearchResult(const std::string &result,
+                           std::string &text,
+                           ObjectFileRef &ref) const;
+
+
+    uint8_t                 offsetSizeBytes;  //! size in bytes of FileOffsets stored in the tries
+    std::vector<TrieInfo>   tries;
+  };
 }
 
 
