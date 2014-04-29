@@ -30,6 +30,7 @@
 #include <osmscout/util/FileScanner.h>
 #include <osmscout/util/Number.h>
 #include <osmscout/util/String.h>
+#include <osmscout/util/QuadIndex.h>
 
 #include <iostream>
 namespace osmscout {
@@ -288,8 +289,6 @@ namespace osmscout {
     while (!remainingWayTypes.empty()) {
       uint32_t                   wayCount=0;
       std::set<TypeId>           currentWayTypes(remainingWayTypes);
-      double                     cellWidth=360.0/pow(2.0,(int)level);
-      double                     cellHeight=180.0/pow(2.0,(int)level);
       std::vector<CoordCountMap> cellFillCount(typeConfig.GetTypes().size());
 
       progress.Info("Scanning Level "+NumberToString(level)+" ("+NumberToString(remainingWayTypes.size())+" types remaining)");
@@ -320,22 +319,13 @@ namespace osmscout {
           continue;
         }
 
-        double minLon;
-        double maxLon;
-        double minLat;
-        double maxLat;
-
-        way.GetBoundingBox(minLon,maxLon,minLat,maxLat);
-
-        //
-        // Calculate minimum and maximum tile ids that are covered
-        // by the way
-        // Renormated coordinate space (everything is >=0)
-        //
-        uint32_t minxc=(uint32_t)floor((minLon+180.0)/cellWidth);
-        uint32_t maxxc=(uint32_t)floor((maxLon+180.0)/cellWidth);
-        uint32_t minyc=(uint32_t)floor((minLat+90.0)/cellHeight);
-        uint32_t maxyc=(uint32_t)floor((maxLat+90.0)/cellHeight);
+        uint32_t minxc;
+        uint32_t maxxc;
+        uint32_t minyc;
+        uint32_t maxyc;
+        QuadIndex::WayCellIds(&way, level,
+                              minxc, maxxc,
+                              minyc, maxyc);
 
         for (uint32_t y=minyc; y<=maxyc; y++) {
           for (uint32_t x=minxc; x<=maxxc; x++) {
@@ -364,7 +354,9 @@ namespace osmscout {
            cwt++) {
         maxLevel=std::max(maxLevel,level);
 
-        progress.Info("Type "+typeConfig.GetTypeInfo(*cwt).GetName()+"(" + NumberToString(*cwt)+"), "+NumberToString(wayTypeData[*cwt].indexCells)+" cells, "+NumberToString(wayTypeData[*cwt].indexEntries)+" objects");
+        progress.Info("Type "+typeConfig.GetTypeInfo(*cwt).GetName()+"(" + NumberToString(*cwt)+"), "+
+                      NumberToString(wayTypeData[*cwt].indexCells)+" cells, "+
+                      NumberToString(wayTypeData[*cwt].indexEntries)+" objects");
 
         remainingWayTypes.erase(*cwt);
       }
@@ -423,8 +415,6 @@ namespace osmscout {
     for (size_t l=parameter.GetAreaWayMinMag(); l<=maxLevel; l++) {
       std::set<TypeId> indexTypes;
       uint32_t         wayCount;
-      double           cellWidth=360.0/pow(2.0,(int)l);
-      double           cellHeight=180.0/pow(2.0,(int)l);
 
       for (size_t i=0; i<typeConfig.GetTypes().size(); i++) {
         if (typeConfig.GetTypeInfo(i).CanBeWay() &&
@@ -471,22 +461,12 @@ namespace osmscout {
           continue;
         }
 
-        double minLon;
-        double maxLon;
-        double minLat;
-        double maxLat;
+        uint32_t minxc;
+        uint32_t maxxc;
+        uint32_t minyc;
+        uint32_t maxyc;
 
-        way.GetBoundingBox(minLon,maxLon,minLat,maxLat);
-
-        //
-        // Calculate minimum and maximum tile ids that are covered
-        // by the way
-        // Renormated coordinate space (everything is >=0)
-        //
-        uint32_t minxc=(uint32_t)floor((minLon+180.0)/cellWidth);
-        uint32_t maxxc=(uint32_t)floor((maxLon+180.0)/cellWidth);
-        uint32_t minyc=(uint32_t)floor((minLat+90.0)/cellHeight);
-        uint32_t maxyc=(uint32_t)floor((maxLat+90.0)/cellHeight);
+        QuadIndex::WayCellIds(&way, l, minxc, maxxc, minyc, maxyc);
 
         for (uint32_t y=minyc; y<=maxyc; y++) {
           for (uint32_t x=minxc; x<=maxxc; x++) {

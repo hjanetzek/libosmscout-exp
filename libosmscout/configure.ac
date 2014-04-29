@@ -44,6 +44,11 @@ AC_ARG_ENABLE([marisa-support],
                               [disable usage of libmarisa])],
               [])
 
+AC_ARG_ENABLE([mercator-index],
+              [AS_HELP_STRING([--enable-mercator-index],
+                              [use mercator quad-tree index, default is wgs84])],
+              [])
+
 AS_IF([test "$enable_cpp0x_support" != "no"],
       [AX_CHECK_COMPILE_FLAG([-std=c++0x],
                              [CPP0XFLAGS="-std=c++0x"
@@ -191,6 +196,9 @@ AS_IF([test "$enable_marisa_support" != "no"],
                          [LIB_MARISA_FOUND=false])])
 
 AM_CONDITIONAL(OSMSCOUT_HAVE_LIB_MARISA,[test "$LIB_MARISA_FOUND" = true])
+
+AS_IF([test "$enable_mercator_index" = yes],
+      [AC_DEFINE([USE_MERCATOR_INDEX],[1],[Using index optimized for mercator tiles])])
 
 CPPFLAGS="-DLIB_DATADIR=\\\"$datadir/$PACKAGE_NAME\\\" $CPPFLAGS"
 

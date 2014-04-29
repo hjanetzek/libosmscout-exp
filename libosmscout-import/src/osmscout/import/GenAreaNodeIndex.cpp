@@ -33,6 +33,7 @@
 #include <osmscout/util/Geometry.h>
 #include <osmscout/util/Number.h>
 #include <osmscout/util/String.h>
+#include <osmscout/util/QuadIndex.h>
 
 namespace osmscout {
 
@@ -130,9 +131,8 @@ namespace osmscout {
         // If we still need to handle this type,
         // count number of entries per type and tile cell
         if (currentNodeTypes.find(node.GetType())!=currentNodeTypes.end()) {
-          uint32_t xc=(uint32_t)floor((node.GetLon()+180.0)/cellWidth);
-          uint32_t yc=(uint32_t)floor((node.GetLat()+90.0)/cellHeight);
-
+          uint32_t xc, yc;
+          QuadIndex::CellId(node.GetLon(),node.GetLat(), cellWidth, cellHeight, xc, yc);
           cellFillCount[node.GetType()][Pixel(xc,yc)]++;
         }
       }
@@ -323,9 +323,8 @@ namespace osmscout {
         }
 
         if (indexTypes.find(node.GetType())!=indexTypes.end()) {
-          uint32_t xc=(uint32_t)floor((node.GetLon()+180.0)/cellWidth);
-          uint32_t yc=(uint32_t)floor((node.GetLat()+90.0)/cellHeight);
-
+          uint32_t xc, yc;
+          QuadIndex::CellId(node.GetLon(),node.GetLat(), cellWidth, cellHeight, xc, yc);
           typeCellOffsets[node.GetType()][Pixel(xc,yc)].push_back(offset);
         }
       }

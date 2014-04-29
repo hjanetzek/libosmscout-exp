@@ -22,6 +22,7 @@
 #include <iostream>
 
 #include <osmscout/system/Math.h>
+#include <osmscout/util/QuadIndex.h>
 
 namespace osmscout {
 
@@ -34,13 +35,7 @@ namespace osmscout {
     cellYStart(0),
     cellYEnd(0),
     cellXCount(0),
-    cellYCount(0),
-    cellWidth(0.0),
-    cellHeight(0.0),
-    minLon(0.0),
-    maxLon(0.0),
-    minLat(0.0),
-    maxLat(0.0)
+    cellYCount(0)
   {
   }
 
@@ -93,14 +88,6 @@ namespace osmscout {
 
         wayTypeData[type].cellXCount=wayTypeData[type].cellXEnd-wayTypeData[type].cellXStart+1;
         wayTypeData[type].cellYCount=wayTypeData[type].cellYEnd-wayTypeData[type].cellYStart+1;
-
-        wayTypeData[type].cellWidth=360.0/pow(2.0,(int)wayTypeData[type].indexLevel);
-        wayTypeData[type].cellHeight=180.0/pow(2.0,(int)wayTypeData[type].indexLevel);
-
-        wayTypeData[type].minLon=wayTypeData[type].cellXStart*wayTypeData[type].cellWidth-180.0;
-        wayTypeData[type].maxLon=(wayTypeData[type].cellXEnd+1)*wayTypeData[type].cellWidth-180.0;
-        wayTypeData[type].minLat=wayTypeData[type].cellYStart*wayTypeData[type].cellHeight-90.0;
-        wayTypeData[type].maxLat=(wayTypeData[type].cellYEnd+1)*wayTypeData[type].cellHeight-90.0;
       }
     }
 
@@ -108,10 +95,10 @@ namespace osmscout {
   }
 
   bool AreaWayIndex::GetOffsets(const TypeData& typeData,
-                                double minlon,
-                                double minlat,
-                                double maxlon,
-                                double maxlat,
+                                uint32_t minxc,
+                                uint32_t minyc,
+                                uint32_t maxxc,
+                                uint32_t maxyc,
                                 size_t maxWayCount,
                                 OSMSCOUT_HASHSET<FileOffset>& offsets,
                                 size_t currentSize,
@@ -122,19 +109,24 @@ namespace osmscout {
       return true;
     }
 
-    if (maxlon<typeData.minLon ||
-        minlon>=typeData.maxLon ||
-        maxlat<typeData.minLat ||
-        minlat>=typeData.maxLat) {
-      // No data available in given bounding box
-      return true;
+    uint32_t levelShift = (QuadIndex::MAX_LEVEL - typeData.indexLevel);
+    minxc >>= levelShift;
+    minyc >>= levelShift;
+    maxxc >>= levelShift;
+    maxyc >>= levelShift;
+
+    if (minxc > typeData.cellXEnd ||
+            maxxc < typeData.cellXStart ||
+            minyc > typeData.cellYEnd ||
+            maxyc < typeData.cellYStart){
+        // No data available in given bounding box
+        return true;
     }
 
-    uint32_t minxc=(uint32_t)floor((minlon+180.0)/typeData.cellWidth);
-    uint32_t maxxc=(uint32_t)floor((maxlon+180.0)/typeData.cellWidth);
-
-    uint32_t minyc=(uint32_t)floor((minlat+90.0)/typeData.cellHeight);
-    uint32_t maxyc=(uint32_t)floor((maxlat+90.0)/typeData.cellHeight);
+//    int level = typeData.indexLevel;
+//    std::cerr << "scan: "  <<  level << " ... "<< minxc << " " << ((1 << level) - minyc -1)
+//                                        << " " << maxxc << " " << ((1 << level) - maxyc -1)
+//                                        << std::endl;
 
     minxc=std::max(minxc,typeData.cellXStart);
     maxxc=std::min(maxxc,typeData.cellXEnd);
@@ -254,6 +246,13 @@ namespace osmscout {
     newOffsets.reserve(std::min(100000u,(uint32_t)maxWayCount));
 #endif
 
+    uint32_t minxc, maxxc, minyc, maxyc;
+    QuadIndex::CellIds(minlon, maxlon,
+                       minlat, maxlat,
+                       QuadIndex::MAX_LEVEL,
+                       minxc, maxxc,
+                       minyc, maxyc);
+
     for (size_t i=0; i<wayTypes.size(); i++) {
       newOffsets.clear();
 
@@ -262,10 +261,10 @@ namespace osmscout {
           ++type) {
         if (wayTypes[i].IsTypeSet(type)) {
           if (!GetOffsets(wayTypeData[type],
-                          minlon,
-                          minlat,
-                          maxlon,
-                          maxlat,
+                          minxc,
+                          minyc,
+                          maxxc,
+                          maxyc,
                           maxWayCount,
                           newOffsets,
                           offsets.size(),

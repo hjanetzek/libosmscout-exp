@@ -29,6 +29,7 @@
 #include <osmscout/util/File.h>
 #include <osmscout/util/FileScanner.h>
 #include <osmscout/util/String.h>
+#include <osmscout/util/QuadIndex.h>
 
 namespace osmscout {
 
@@ -129,21 +130,8 @@ namespace osmscout {
     FileScanner               scanner;
     size_t                    areas=0;         // Number of areas found
     size_t                    areasConsumed=0; // Number of areas consumed
-    std::vector<double>       cellWidth;
-    std::vector<double>       cellHeight;
     std::map<Pixel,AreaLeaf>  leafs;
     std::map<Pixel,AreaLeaf>  newAreaLeafs;
-
-    cellWidth.resize(parameter.GetAreaAreaIndexMaxMag()+1);
-    cellHeight.resize(parameter.GetAreaAreaIndexMaxMag()+1);
-
-    for (size_t i=0; i<cellWidth.size(); i++) {
-      cellWidth[i]=360.0/pow(2.0,(int)i);
-    }
-
-    for (size_t i=0; i<cellHeight.size(); i++) {
-      cellHeight[i]=180.0/pow(2.0,(int)i);
-    }
 
     //
     // Writing index file
@@ -244,42 +232,52 @@ namespace osmscout {
           // hold the geometric center of the tile.
           //
 
+#ifdef USE_MERCATOR_INDEX
+          double height = atanh(sin(maxLat*gradtorad))/(gradtorad*2) -
+                           atanh(sin(minLat*gradtorad))/(gradtorad*2);
+#else
+          double height = maxLat-minLat;
+#endif
+          double width = maxLon-minLon;
+
           int level=parameter.GetAreaAreaIndexMaxMag();
+          double cellWidth = 360.0/(1<<level);
+          double cellHeight = 180.0/(1<<level);
+
           while (level>=0) {
-            if (maxLon-minLon<=cellWidth[level] &&
-                maxLat-minLat<=cellHeight[level]) {
+            if (width<=cellWidth &&
+                height<=cellHeight) {
               break;
             }
-
+            cellWidth *= 2.0;
+            cellHeight *= 2.0;
             level--;
           }
 
+
           if (level==l) {
-            //
-            // Renormated coordinate space (everything is >=0)
-            //
+            uint32_t minxc;
+            uint32_t maxxc;
+            uint32_t minyc;
+            uint32_t maxyc;
 
-            minLon+=180;
-            maxLon+=180;
-            minLat+=90;
-            maxLat+=90;
-
-            //
-            // Calculate minimum and maximum tile ids that are covered
-            // by the area
-            //
-            uint32_t minyc=(uint32_t)floor(minLat/cellHeight[level]);
-            uint32_t maxyc=(uint32_t)ceil(maxLat/cellHeight[level]);
-            uint32_t minxc=(uint32_t)floor(minLon/cellWidth[level]);
-            uint32_t maxxc=(uint32_t)ceil(maxLon/cellWidth[level]);
+            QuadIndex::CellIds(minLon, maxLon,
+                               minLat, maxLat,
+                               level,
+                               minxc, maxxc,
+                               minyc, maxyc);
 
             Entry entry;
 
             entry.type=area.GetType();
             entry.offset=offset;
 
-            // Add this area to the tile where the center of the area lies in.
-            leafs[Pixel((minxc+maxxc)/2,(minyc+maxyc)/2)].areas.push_back(entry);
+            for (uint32_t y=minyc; y<=maxyc;y++){
+                for (uint32_t x=minxc;x<=maxxc;x++){
+                    leafs[Pixel(x, y)].areas.push_back(entry);
+                 }
+            }
+
             areaLevelEntries++;
 
             areasConsumed++;
