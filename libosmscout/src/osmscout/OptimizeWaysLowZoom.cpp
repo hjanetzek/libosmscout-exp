@@ -29,6 +29,7 @@
 #include <osmscout/util/StopClock.h>
 #include <osmscout/util/String.h>
 #include <osmscout/util/Transformation.h>
+#include <osmscout/util/QuadIndex.h>
 
 #include <iostream>
 
@@ -64,13 +65,6 @@ namespace osmscout
     data.cellXCount=data.cellXEnd-data.cellXStart+1;
     data.cellYCount=data.cellYEnd-data.cellYStart+1;
 
-    data.cellWidth=360.0/pow(2.0,(int)data.indexLevel);
-    data.cellHeight=180.0/pow(2.0,(int)data.indexLevel);
-
-    data.minLon=data.cellXStart*data.cellWidth-180.0;
-    data.maxLon=(data.cellXEnd+1)*data.cellWidth-180.0;
-    data.minLat=data.cellYStart*data.cellHeight-90.0;
-    data.maxLat=(data.cellYEnd+1)*data.cellHeight-90.0;
 
     return !scanner.HasError();
   }
@@ -145,10 +139,10 @@ namespace osmscout
   }
 
   bool OptimizeWaysLowZoom::GetOffsets(const TypeData& typeData,
-                                       double minlon,
-                                       double minlat,
-                                       double maxlon,
-                                       double maxlat,
+                                       uint32_t minxc,
+                                       uint32_t minyc,
+                                       uint32_t maxxc,
+                                       uint32_t maxyc,
                                        std::vector<FileOffset>& offsets) const
   {
     std::set<FileOffset> newOffsets;
@@ -158,19 +152,19 @@ namespace osmscout
       return true;
     }
 
-    if (maxlon<typeData.minLon ||
-        minlon>=typeData.maxLon ||
-        maxlat<typeData.minLat ||
-        minlat>=typeData.maxLat) {
-      // No data available in given bounding box
-      return true;
-    }
+    uint32_t shift = (QuadIndex::MAX_LEVEL - typeData.indexLevel);
+	minxc >>= shift;
+	minyc >>= shift;
+	maxxc >>= shift;
+	maxyc >>= shift;
 
-    uint32_t minxc=(uint32_t)floor((minlon+180.0)/typeData.cellWidth);
-    uint32_t maxxc=(uint32_t)floor((maxlon+180.0)/typeData.cellWidth);
-
-    uint32_t minyc=(uint32_t)floor((minlat+90.0)/typeData.cellHeight);
-    uint32_t maxyc=(uint32_t)floor((maxlat+90.0)/typeData.cellHeight);
+	if (minxc > typeData.cellXEnd ||
+			maxxc < typeData.cellXStart ||
+			minyc > typeData.cellYEnd ||
+			maxyc < typeData.cellYStart){
+		// No data available in given bounding box
+		return true;
+	}
 
     minxc=std::max(minxc,typeData.cellXStart);
     maxxc=std::min(maxxc,typeData.cellXEnd);
@@ -260,8 +254,8 @@ namespace osmscout
     return true;
   }
 
-  bool OptimizeWaysLowZoom::GetWays(double lonMin, double latMin,
-                                    double lonMax, double latMax,
+  bool OptimizeWaysLowZoom::GetWays(double minlon, double minlat,
+                                    double maxlon, double maxlat,
                                     const Magnification& magnification,
                                     size_t /*maxWayCount*/,
                                     std::vector<TypeSet>& wayTypes,
@@ -277,6 +271,13 @@ namespace osmscout
     }
 
     offsets.reserve(20000);
+
+    uint32_t minxc, maxxc, minyc, maxyc;
+    QuadIndex::CellIds(minlon, maxlon,
+                       minlat, maxlat,
+                       QuadIndex::MAX_LEVEL,
+                       minxc, maxxc,
+                       minyc, maxyc);
 
     for (size_t i=0; i<wayTypes.size(); i++) {
       for (std::map<TypeId,std::list<TypeData> >::const_iterator type=wayTypesData.begin();
@@ -296,10 +297,10 @@ namespace osmscout
           if (match!=type->second.end()) {
             if (match->bitmapOffset!=0) {
               if (!GetOffsets(*match,
-                              lonMin,
-                              latMin,
-                              lonMax,
-                              latMax,
+                              minxc,
+                              minyc,
+                              maxxc,
+                              maxyc,
                               offsets)) {
                 return false;
               }

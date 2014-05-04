@@ -28,9 +28,9 @@ OST
       The given area, way or node is as POI and should be indexed
       by its name in relation to the enclosing region.
     INDEX_LOC:
-      The given way or area should be indexed as location.  
+      The given way or area should be indexed as location.
     IGNORE:
-      Ignore objects of this type  
+      Ignore objects of this type
 */
 
 GRADES
@@ -92,7 +92,7 @@ TYPES
        OPTIONS ROUTE[CAR] INDEX_LOC OPTIMIZE_LOW_ZOOM
   TYPE highway_motorway_link = WAY ("highway"=="motorway_link")
        OPTIONS ROUTE[CAR] INDEX_LOC OPTIMIZE_LOW_ZOOM
-  
+
   // Other roads mainly for cars
   TYPE highway_trunk = WAY ("highway"=="trunk") OPTIONS ROUTE[FOOT BICYCLE CAR] INDEX_LOC OPTIMIZE_LOW_ZOOM
   TYPE highway_trunk_link = WAY ("highway"=="trunk_link") OPTIONS ROUTE[FOOT BICYCLE CAR] INDEX_LOC OPTIMIZE_LOW_ZOOM
@@ -106,7 +106,7 @@ TYPES
   TYPE highway_residential = WAY ("highway"=="residential") OPTIONS ROUTE[FOOT BICYCLE CAR] INDEX_LOC
   TYPE highway_living_street = WAY ("highway"=="living_street") OPTIONS ROUTE[FOOT BICYCLE CAR] INDEX_LOC
   TYPE highway_service = WAY AREA ("highway"=="service") OPTIONS ROUTE[FOOT BICYCLE CAR] INDEX_LOC PIN_WAY
-  
+
   // Ways with main designation different to car
   TYPE highway_track = WAY ("highway"=="track") OPTIONS ROUTE[FOOT BICYCLE] INDEX_LOC
   TYPE highway_pedestrian = WAY AREA ("highway"=="pedestrian") OPTIONS ROUTE[FOOT] INDEX_LOC PIN_WAY
@@ -168,15 +168,15 @@ TYPES
   TYPE aeroway_gate = NODE ("aeroway"=="gate")
 
   TYPE public_transport_platform = WAY AREA ("public_transport"=="platform" OR
-                                             "railway"=="platform" OR
-                                             "highway"=="platform")
+					     "railway"=="platform" OR
+					     "highway"=="platform")
 
   TYPE landuse_allotments = NODE AREA ("landuse"=="allotments")
   TYPE landuse_basin = NODE AREA ("landuse"=="basin")
   TYPE landuse_brownfield = NODE AREA ("landuse"=="brownfield")
   TYPE landuse_cemetery = AREA ("landuse"=="cemetery")
   TYPE landuse_cemetery_sea = AREA ("landuse"=="cemetery" AND "cemetery"=="sea") OPTIONS IGNORESEALAND
-  TYPE landuse_commercial = NODE AREA ("landuse"=="commercial") OPTIONS OPTIMIZE_LOW_ZOOM 
+  TYPE landuse_commercial = NODE AREA ("landuse"=="commercial") OPTIONS OPTIMIZE_LOW_ZOOM
   TYPE landuse_construction = NODE AREA ("landuse"=="construction")
   TYPE landuse_farm = AREA ("landuse"=="farm") OPTIONS OPTIMIZE_LOW_ZOOM
   TYPE landuse_farmland = AREA ("landuse"=="farmland") OPTIONS OPTIMIZE_LOW_ZOOM
@@ -263,6 +263,15 @@ TYPES
   TYPE amenity_kindergarten_building = AREA ("amenity"=="kindergarten" AND EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
   TYPE amenity_kindergarten = NODE ("amenity"=="kindergarten") OPTIONS INDEX_POI
 
+  TYPE amenity_university_building = AREA ("amenity"=="university" AND EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
+  TYPE amenity_university = NODE AREA ("amenity"=="university") OPTIONS INDEX_POI
+
+  TYPE amenity_college_building = AREA ("amenity"=="college" AND EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
+  TYPE amenity_college = NODE AREA ("amenity"=="college") OPTIONS INDEX_POI
+
+  TYPE amenity_school_building = AREA ("amenity"=="school" AND EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
+  TYPE amenity_school = NODE AREA ("amenity"=="school") OPTIONS INDEX_POI
+
   TYPE amenity_bench = NODE WAY ("amenity"=="bench")
   TYPE amenity_grave_yard = NODE AREA ("amenity"=="grave_yard") OPTIONS INDEX_POI
   TYPE amenity_pharmacy = NODE AREA ("amenity"=="pharmacy") OPTIONS INDEX_POI
@@ -274,20 +283,78 @@ TYPES
   TYPE amenity_taxi = NODE AREA ("amenity"=="taxi")
   TYPE amenity_toilets = NODE ("amenity"=="toilets")
 
+  TYPE amenity_bar = NODE AREA ("amenity"=="bar") OPTIONS INDEX_POI
+  TYPE amenity_pub = NODE AREA ("amenity"=="pub") OPTIONS INDEX_POI
+  TYPE amenity_cafe = NODE AREA ("amenity"=="cafe") OPTIONS INDEX_POI
+  TYPE amenity_restaurant = NODE AREA ("amenity"=="restaurant") OPTIONS INDEX_POI
+  TYPE amenity_fast_food = NODE AREA ("amenity"=="fast_food") OPTIONS INDEX_POI
+
+  TYPE amenity_cinema_building = NODE AREA ("amenity"=="cinema" AND EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
+  TYPE amenity_cinema = NODE AREA ("amenity"=="cinema") OPTIONS INDEX_POI
+
   // Churches
   TYPE christian_church_building = AREA ("amenity"=="place_of_worship" AND
-                                           "religion"=="christian" AND
-                                           EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
+					   "religion"=="christian" AND
+					   EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
 
   TYPE christian_church = NODE ("amenity"=="place_of_worship" AND
-                                  "religion"=="christian") OPTIONS INDEX_POI
+				  "religion"=="christian") OPTIONS INDEX_POI
+
+  TYPE amenity_building = AREA (EXISTS "amenity" AND EXISTS "building" AND !("building" IN ["no","false","0"])) OPTIONS INDEX_POI
+
+  // No location index for parking
+  TYPE amenity_parking = NODE AREA ("amenity"=="parking")
 
   // Everything else is just an 'amenity' for now
-  TYPE amenity_building = AREA (EXISTS "amenity" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-  TYPE amenity = NODE (EXISTS "amenity")
+  TYPE amenity = NODE AREA (EXISTS "amenity") OPTIONS INDEX_POI
 
   // Currently all shops are the same...
-  TYPE shop = NODE AREA (EXISTS "shop")
+  TYPE shop_supermarket = NODE AREA ("shop"=="supermarket") OPTIONS INDEX_POI
+  TYPE shop_convenience = NODE AREA ("shop"=="convenience") OPTIONS INDEX_POI
+  TYPE shop_clothes = NODE AREA ("shop"=="clothes") OPTIONS INDEX_POI
+  TYPE shop_bakery = NODE AREA ("shop"=="bakery") OPTIONS INDEX_POI
+  TYPE shop_hairdresser = NODE AREA ("shop"=="hairdresser") OPTIONS INDEX_POI
+  TYPE shop_car_repair = NODE AREA ("shop"=="car_repair") OPTIONS INDEX_POI
+  TYPE shop_car = NODE AREA ("shop"=="car") OPTIONS INDEX_POI
+  TYPE shop_kiosk = NODE AREA ("shop"=="kiosk") OPTIONS INDEX_POI
+  TYPE shop_doityourself = NODE AREA ("shop"=="doityourself") OPTIONS INDEX_POI
+  TYPE shop_butcher = NODE AREA ("shop"=="butcher") OPTIONS INDEX_POI
+  TYPE shop_florist = NODE AREA ("shop"=="florist") OPTIONS INDEX_POI
+  TYPE shop_mall = NODE AREA ("shop"=="mall") OPTIONS INDEX_POI
+  TYPE shop_bicycle = NODE AREA ("shop"=="bicycle") OPTIONS INDEX_POI
+  TYPE shop_furniture = NODE AREA ("shop"=="furniture") OPTIONS INDEX_POI
+  TYPE shop_alcohol = NODE AREA ("shop"=="alcohol") OPTIONS INDEX_POI
+  TYPE shop_books = NODE AREA ("shop"=="books") OPTIONS INDEX_POI
+  TYPE shop_electronics = NODE AREA ("shop"=="electronics") OPTIONS INDEX_POI
+  TYPE shop_shoes = NODE AREA ("shop"=="shoes") OPTIONS INDEX_POI
+  TYPE shop_department_store = NODE AREA ("shop"=="department_store") OPTIONS INDEX_POI
+  TYPE shop_hardware = NODE AREA ("shop"=="hardware") OPTIONS INDEX_POI
+  TYPE shop_optician = NODE AREA ("shop"=="optician") OPTIONS INDEX_POI
+  TYPE shop_gift = NODE AREA ("shop"=="gift") OPTIONS INDEX_POI
+  TYPE shop_chemist = NODE AREA ("shop"=="chemist") OPTIONS INDEX_POI
+  TYPE shop_mobile_phone = NODE AREA ("shop"=="mobile_phone") OPTIONS INDEX_POI
+  TYPE shop_greengrocer = NODE AREA ("shop"=="greengrocer") OPTIONS INDEX_POI
+  TYPE shop_garden_centre = NODE AREA ("shop"=="garden_centre") OPTIONS INDEX_POI
+  TYPE shop_beauty = NODE AREA ("shop"=="beauty") OPTIONS INDEX_POI
+  TYPE shop_computer = NODE AREA ("shop"=="computer") OPTIONS INDEX_POI
+  TYPE shop_sports = NODE AREA ("shop"=="sports") OPTIONS INDEX_POI
+  TYPE shop_beverages = NODE AREA ("shop"=="beverages") OPTIONS INDEX_POI
+  TYPE shop_laundry = NODE AREA ("shop"=="laundry") OPTIONS INDEX_POI
+  TYPE shop_confectionery = NODE AREA ("shop"=="confectionery") OPTIONS INDEX_POI
+  TYPE shop_toys = NODE AREA ("shop"=="toys") OPTIONS INDEX_POI
+  TYPE shop_travel_agency = NODE AREA ("shop"=="travel_agency") OPTIONS INDEX_POI
+  TYPE shop_stationery = NODE AREA ("shop"=="stationery") OPTIONS INDEX_POI
+  TYPE shop_variety_store = NODE AREA ("shop"=="variety_store") OPTIONS INDEX_POI
+  // could be merged with kiosk?
+  TYPE shop_newsagent = NODE AREA ("shop"=="newsagent") OPTIONS INDEX_POI
+  //... skipped some in taginfo
+  TYPE shop_pet = NODE AREA ("shop"=="pet") OPTIONS INDEX_POI
+  TYPE shop_boutique = NODE AREA ("shop"=="boutique") OPTIONS INDEX_POI
+  TYPE shop_outdoor = NODE AREA ("shop"=="outdoor") OPTIONS INDEX_POI
+  // why isnt it called delicatessen ???
+  TYPE shop_deli = NODE AREA ("shop"=="deli") OPTIONS INDEX_POI
+
+  TYPE shop = NODE AREA (EXISTS "shop") OPTIONS INDEX_POI
 
   TYPE tourism_aquarium = NODE AREA ("tourism"=="aquarium") OPTIONS INDEX_POI
   TYPE tourism_attraction = NODE AREA ("tourism"=="attraction") OPTIONS INDEX_POI
@@ -319,7 +386,7 @@ TYPES
 
   // Do not delete the following type, they are required by the GenLocation import step
   TYPE boundary_administrative = WAY AREA ("boundary"=="administrative") OR
-                                   RELATION ("type"=="boundary" AND "boundary"=="administrative") OPTIONS MULTIPOLYGON IGNORESEALAND
+				   RELATION ("type"=="boundary" AND "boundary"=="administrative") OPTIONS MULTIPOLYGON IGNORESEALAND
 
   TYPE place_continent = NODE AREA ("place"=="continent")
   TYPE place_country = NODE ("place"=="country")
@@ -435,8 +502,8 @@ TYPES
 
   // Types we currently ignore
 
-  // This does increase the size of nodes data too much 
-  TYPE building_entrance = NODE ("building"=="entrance" OR EXISTS "entrance") OPTIONS IGNORE  
+  // This does increase the size of nodes data too much
+  TYPE building_entrance = NODE ("building"=="entrance" OR EXISTS "entrance") OPTIONS IGNORE
 
   TYPE street_any = RELATION ("type"=="street") OPTIONS IGNORE
   TYPE tunnel_any = RELATION ("type"=="tunnel") OPTIONS IGNORE

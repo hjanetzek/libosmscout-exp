@@ -100,11 +100,11 @@ namespace osmscout {
     {
       return tags;
     }
-
+#ifndef SWIG
     bool SetTags(Progress& progress,
                  const TypeConfig& typeConfig,
                  std::vector<Tag>& tags);
-
+#endif
     bool operator==(const NodeAttributes& other) const;
     bool operator!=(const NodeAttributes& other) const;
   };
@@ -177,6 +177,7 @@ namespace osmscout {
       return !attributes.GetTags().empty();
     }
 
+#ifndef SWIG
     void SetType(TypeId type);
     void SetCoords(const GeoCoord& coords);
     bool SetTags(Progress& progress,
@@ -185,6 +186,7 @@ namespace osmscout {
 
     bool Read(FileScanner& scanner);
     bool Write(FileWriter& writer) const;
+#endif
   };
 
   typedef Ref<Node> NodeRef;

@@ -26,6 +26,9 @@
 #include <osmscout/system/SSEMath.h>
 #endif
 
+//#include <iostream>
+//#include <stdio.h>
+
 namespace osmscout {
 
 #ifdef OSMSCOUT_HAVE_SSE2
@@ -86,7 +89,7 @@ namespace osmscout {
     lonMin=lon-boxWidth/2;
     lonMax=lon+boxWidth/2;
 
-    scale=(width-1)/(gradtorad*(lonMax-lonMin));
+    scale=(width)/(gradtorad*(lonMax-lonMin));
     scaleGradtorad = scale * gradtorad;
 
     // Width of an pixel in meter
@@ -103,16 +106,16 @@ namespace osmscout {
     lonOffset=lonMin*scale*gradtorad;
     latOffset=scale*atanh(sin(latMin*gradtorad));
 
-    /*
-    std::cout << "Box (grad) h: " << lonMin << "-" << lonMax << " v: " << latMin <<"-" << latMax << std::endl;
-    std::cout << "Center (grad):" << this->lat << "x" << this->lon << std::endl;
-    std::cout << "Magnification: " << magnification << std::endl;
-    std::cout << "Scale: " << scale << std::endl;
-    std::cout << "Screen dimension: " << width << "x" << height << std::endl;
-    std::cout << "d: " << d << " " << d*180*60/M_PI << std::endl;
-    std::cout << "The complete screen are " << d*180*60/M_PI*1852.216 << " meters" << std::endl;
-    std::cout << "1 pixel are " << pixelSize << " meters" << std::endl;
-    std::cout << "20 meters are " << 20/(d*180*60/M_PI*1852.216/width) << " pixels" << std::endl;*/
+
+//    std::cout << "Box (grad) h: " << lonMin << "-" << lonMax << " v: " << latMin <<"-" << latMax << std::endl;
+//    std::cout << "Center (grad):" << this->lat << "x" << this->lon << std::endl;
+//    //std::cout << "Magnification: " << magnification << std::endl;
+//    std::cout << "Scale: " << scale << std::endl;
+//    std::cout << "Screen dimension: " << width << "x" << height << std::endl;
+//    std::cout << "d: " << d << " " << d*180*60/M_PI << std::endl;
+//    std::cout << "The complete screen are " << d*180*60/M_PI*1852.216 << " meters" << std::endl;
+//    std::cout << "1 pixel are " << pixelSize << " meters" << std::endl;
+//    std::cout << "20 meters are " << 20/(d*180*60/M_PI*1852.216/width) << " pixels" << std::endl;
 
 #ifdef OSMSCOUT_HAVE_SSE2
     sse2LonOffset      = _mm_set1_pd(lonOffset);
@@ -149,33 +152,40 @@ namespace osmscout {
     this->magnification=magnification;
     this->width=width;
 
+    double minY = atanh(sin(latMin*gradtorad));
+    double maxY = atanh(sin(latMax*gradtorad));
     // Make a copy of the context information
     this->lon=(lonMin+lonMax)/2;
-    this->lat=atan(sinh((atanh(sin(latMax*gradtorad))+atanh(sin(latMin*gradtorad)))/2))/gradtorad;
+    this->lat=atan(sinh((maxY + minY) /2))/gradtorad;
 
-    scale=(width-1)/(gradtorad*(lonMax-lonMin));
-    scaleGradtorad = scale * gradtorad;
+    double widthLon = (lonMax-lonMin);
+
+    scaleGradtorad = width / widthLon;
+    scale = scaleGradtorad / gradtorad;
+
+    //scale = (lonMax-lonMin) / 360.0;
 
     // Width of an pixel in meter
-    double d=(lonMax-lonMin)*gradtorad;
+    double d = widthLon * gradtorad;
 
     pixelSize=d*180*60/M_PI*1852.216/width;
 
-    this->height=(atanh(sin(latMax*gradtorad))-atanh(sin(latMin*gradtorad)))*scale;
+    this->height = (maxY-minY)*scale;
 
-    lonOffset=lonMin*scale*gradtorad;
-    latOffset=scale*atanh(sin(latMin*gradtorad));
+    //lonOffset=lonMin * scaleGradtorad;
+    lonOffset = width * lonMin / widthLon;
+    latOffset = scale * minY;
 
-    /*
-    std::cout << "Box (grad) h: " << lonMin << "-" << lonMax << " v: " << latMin <<"-" << latMax << std::endl;
-    std::cout << "Center (grad):" << this->lat << "x" << this->lon << std::endl;
-    std::cout << "Magnification: " << magnification.GetMagnification() << std::endl;
-    std::cout << "Scale: " << scale << std::endl;
-    std::cout << "Screen dimension: " << width << "x" << height << std::endl;
-    std::cout << "d: " << d << " " << d*180*60/M_PI << std::endl;
-    std::cout << "The complete screen are " << d*180*60/M_PI*1852.216 << " meters" << std::endl;
-    std::cout << "1 pixel are " << pixelSize << " meters" << std::endl;
-    std::cout << "20 meters are " << 20/(d*180*60/M_PI*1852.216/width) << " pixels" << std::endl;*/
+
+//    std::cout << "Box (grad) h: " << lonMin << "-" << lonMax << " v: " << latMin <<"-" << latMax << std::endl;
+//    std::cout << "Center (grad):" << this->lat << "x" << this->lon << std::endl;
+//    //std::cout << "Magnification: " << magnification.GetMagnification() << std::endl;
+//    std::cout << "Scale: " << scale << std::endl;
+//    std::cout << "Screen dimension: " << width << "x" << height << std::endl;
+//    std::cout << "d: " << d << " " << d*180*60/M_PI << std::endl;
+//    std::cout << "The complete screen are " << d*180*60/M_PI*1852.216 << " meters" << std::endl;
+//    std::cout << "1 pixel are " << pixelSize << " meters" << std::endl;
+//    std::cout << "20 meters are " << 20/(d*180*60/M_PI*1852.216/width) << " pixels" << std::endl;
 
 #ifdef OSMSCOUT_HAVE_SSE2
     sse2LonOffset      = _mm_set1_pd(lonOffset);
@@ -224,7 +234,7 @@ namespace osmscout {
   {
     assert(valid);
 
-    x=lon*scaleGradtorad-lonOffset;
+    x=lon * scaleGradtorad - lonOffset;
     y=height-(scale*atanh_sin_pd(lat*gradtorad)-latOffset);
 
     return true;

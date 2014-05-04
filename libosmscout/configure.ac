@@ -44,6 +44,15 @@ AC_ARG_ENABLE([marisa-support],
                               [disable usage of libmarisa])],
               [])
 
+dnl AC_ARG_ENABLE([java-bindings],
+dnl               [AS_HELP_STRING([--disable-bindings],
+dnl                               [disable build of java bindings])],
+
+AC_ARG_ENABLE([mercator-index],
+              [AS_HELP_STRING([--enable-mercator-index],
+                              [use mercator quad-tree index, default is wgs84])],
+              [])
+
 AS_IF([test "$enable_cpp0x_support" != "no"],
       [AX_CHECK_COMPILE_FLAG([-std=c++0x],
                              [CPP0XFLAGS="-std=c++0x"
@@ -192,6 +201,20 @@ AS_IF([test "$enable_marisa_support" != "no"],
 
 AM_CONDITIONAL(OSMSCOUT_HAVE_LIB_MARISA,[test "$LIB_MARISA_FOUND" = true])
 
+use_swig=true
+dnl if test "$enable_java_bindings" != "no"; then
+dnl   AC_PROG_SWIG(3.0.0)
+dnl   if test x"$SWIG" != "x"; then
+dnl     SWIG_ENABLE_CXX
+dnl     AC_SUBST(SWIG)
+dnl     use_swig=true
+dnl   fi
+dnl fi
+AM_CONDITIONAL(ENABLE_SWIG, [ test x"$use_swig" = xtrue ])
+
+AS_IF([test "$enable_mercator_index" = yes],
+      [AC_DEFINE([USE_MERCATOR_INDEX],[1],[Using index optimized for mercator tiles])])
+
 CPPFLAGS="-DLIB_DATADIR=\\\"$datadir/$PACKAGE_NAME\\\" $CPPFLAGS"
 
 AX_CREATE_PKGCONFIG_INFO([],
@@ -201,6 +224,7 @@ AX_CREATE_PKGCONFIG_INFO([],
                          [$CPP0XFLAGS $OPENMP_CXXFLAGS $SIMD_FLAGS $MARISA_CFLAGS],
                          [$OPENMP_CXXFLAGS])
 
-AC_CONFIG_FILES([Makefile src/Makefile include/Makefile tests/Makefile])
+#AC_CONFIG_FILES([Makefile src/Makefile include/Makefile tests/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile include/Makefile tests/Makefile swig/Makefile swig/java/Makefile])
 AC_OUTPUT
 

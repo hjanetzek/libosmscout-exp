@@ -26,6 +26,7 @@
 #include <osmscout/util/FileScanner.h>
 #include <osmscout/util/FileWriter.h>
 #include <osmscout/util/String.h>
+#include <osmscout/util/utf8.h>
 
 #include <osmscout/import/GenTextIndex.h>
 
@@ -111,6 +112,7 @@ namespace osmscout
       try {
         trie.build(*(keysets[i]),
                    MARISA_DEFAULT_NUM_TRIES |
+                   //MARISA_TEXT_TAIL |
                    MARISA_BINARY_TAIL |
                    MARISA_LABEL_ORDER |
                    MARISA_DEFAULT_CACHE);
@@ -499,7 +501,7 @@ namespace osmscout
       return false;
     }
 
-    keyString=text;
+    keyString=Utf8Util::StringToAscii(text, true);
 
     // Use ASCII control characters to denote
     // the start of a file offset:
@@ -536,10 +538,12 @@ namespace osmscout
     // LSB was written first, it would have four
     // branches immediately from its root.
 
+    FileOffset idxoffset = offset;
+
     char buffer[offsetSizeBytes];
     for(uint8_t i=0; i < offsetSizeBytes; i++) {
       uint8_t r=offsetSizeBytes-1-i;
-      buffer[r] = ((offset >> (i*8)) & 0xff);
+      buffer[r] = ((idxoffset >> (i*8)) & 0xff);
     }
 
     for(uint8_t i=0; i < offsetSizeBytes; i++) {

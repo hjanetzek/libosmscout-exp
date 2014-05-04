@@ -411,6 +411,9 @@ namespace osmscout {
       return ptr<other.ptr;
     }
 
+    inline void clear(){
+      *this = NULL;
+    }
   private:
     T* ptr;
   };

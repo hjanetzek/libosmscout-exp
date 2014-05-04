@@ -53,7 +53,7 @@ namespace osmscout {
     uint32_t nodesWrittenCount=0;
 
     //
-    // Iterator over all raw nodes, hcekc they type, and convert them from raw nodes
+    // Iterator over all raw nodes, check their type, and convert them from raw nodes
     // to nodes if the type is interesting (!=typeIgnore).
     //
     // Count the bounding box by the way...

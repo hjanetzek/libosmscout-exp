@@ -78,5 +78,6 @@ libosmscout_la_SOURCES+=osmscout/system/SSEMath.cpp
 endif
 
 if OSMSCOUT_HAVE_LIB_MARISA
-libosmscout_la_SOURCES+=osmscout/TextSearchIndex.cpp
+libosmscout_la_SOURCES+=osmscout/TextSearchIndex.cpp \
+                        osmscout/util/utf8.cpp
 endif

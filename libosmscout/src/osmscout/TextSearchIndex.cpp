@@ -1,6 +1,7 @@
 #include <iostream>
 #include <osmscout/util/String.h>
 #include <osmscout/TextSearchIndex.h>
+#include <osmscout/util/utf8.h>
 
 namespace osmscout
 {
@@ -90,7 +91,7 @@ namespace osmscout
   }
 
 
-  bool TextSearchIndex::Search(const std::string& query,
+  bool TextSearchIndex::Search(const std::string& querystring,
                                bool searchPOIs,
                                bool searchLocations,
                                bool searchRegions,
@@ -99,9 +100,11 @@ namespace osmscout
   {
     results.clear();
 
-    if(query.empty()) {
+    if(querystring.empty()) {
       return true;
     }
+
+    std::string query = Utf8Util::StringToAscii(querystring, true);
 
     std::vector<bool> searchGroups;
 
@@ -171,6 +174,8 @@ namespace osmscout
 
       idx--;
     }
+
+    //offset -= 1;
 
     // Immediately preceding the FileOffset is
     // a single byte that denotes offset type

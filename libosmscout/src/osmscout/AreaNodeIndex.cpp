@@ -22,6 +22,7 @@
 #include <iostream>
 
 #include <osmscout/system/Math.h>
+#include <osmscout/util/QuadIndex.h>
 
 namespace osmscout {
 
@@ -34,13 +35,7 @@ namespace osmscout {
     cellYStart(0),
     cellYEnd(0),
     cellXCount(0),
-    cellYCount(0),
-    cellWidth(0.0),
-    cellHeight(0.0),
-    minLon(0.0),
-    maxLon(0.0),
-    minLat(0.0),
-    maxLat(0.0)
+    cellYCount(0)
   {
   }
 
@@ -91,24 +86,16 @@ namespace osmscout {
 
       nodeTypeData[type].cellXCount=nodeTypeData[type].cellXEnd-nodeTypeData[type].cellXStart+1;
       nodeTypeData[type].cellYCount=nodeTypeData[type].cellYEnd-nodeTypeData[type].cellYStart+1;
-
-      nodeTypeData[type].cellWidth=360.0/pow(2.0,(int)nodeTypeData[type].indexLevel);
-      nodeTypeData[type].cellHeight=180.0/pow(2.0,(int)nodeTypeData[type].indexLevel);
-
-      nodeTypeData[type].minLon=nodeTypeData[type].cellXStart*nodeTypeData[type].cellWidth-180.0;
-      nodeTypeData[type].maxLon=(nodeTypeData[type].cellXEnd+1)*nodeTypeData[type].cellWidth-180.0;
-      nodeTypeData[type].minLat=nodeTypeData[type].cellYStart*nodeTypeData[type].cellHeight-90.0;
-      nodeTypeData[type].maxLat=(nodeTypeData[type].cellYEnd+1)*nodeTypeData[type].cellHeight-90.0;
     }
 
     return !scanner.HasError() && scanner.Close();
   }
 
   bool AreaNodeIndex::GetOffsets(const TypeData& typeData,
-                                 double minlon,
-                                 double minlat,
-                                 double maxlon,
-                                 double maxlat,
+                                 uint32_t minxc,
+                                 uint32_t minyc,
+                                 uint32_t maxxc,
+                                 uint32_t maxyc,
                                  size_t maxNodeCount,
                                  std::vector<FileOffset>& offsets,
                                  size_t currentSize,
@@ -119,27 +106,27 @@ namespace osmscout {
       return true;
     }
 
-    if (maxlon<typeData.minLon ||
-        minlon>=typeData.maxLon ||
-        maxlat<typeData.minLat ||
-        minlat>=typeData.maxLat) {
-      // No data available in given bounding box
-      return true;
+    uint32_t levelShift = (QuadIndex::MAX_LEVEL - typeData.indexLevel);
+    minxc >>= levelShift;
+    minyc >>= levelShift;
+    maxxc >>= levelShift;
+    maxyc >>= levelShift;
+
+    if (minxc > typeData.cellXEnd ||
+            maxxc < typeData.cellXStart ||
+            minyc > typeData.cellYEnd ||
+            maxyc < typeData.cellYStart){
+        // No data available in given bounding box
+        return true;
     }
-
-    OSMSCOUT_HASHSET<FileOffset> newOffsets;
-
-    uint32_t             minxc=(uint32_t)floor((minlon+180.0)/typeData.cellWidth);
-    uint32_t             maxxc=(uint32_t)floor((maxlon+180.0)/typeData.cellWidth);
-
-    uint32_t             minyc=(uint32_t)floor((minlat+90.0)/typeData.cellHeight);
-    uint32_t             maxyc=(uint32_t)floor((maxlat+90.0)/typeData.cellHeight);
 
     minxc=std::max(minxc,typeData.cellXStart);
     maxxc=std::min(maxxc,typeData.cellXEnd);
 
     minyc=std::max(minyc,typeData.cellYStart);
     maxyc=std::min(maxyc,typeData.cellYEnd);
+
+    OSMSCOUT_HASHSET<FileOffset> newOffsets;
 
     FileOffset dataOffset=typeData.indexOffset+
                           typeData.cellXCount*typeData.cellYCount*(FileOffset)typeData.dataOffsetBytes;
@@ -244,13 +231,20 @@ namespace osmscout {
 
     bool sizeExceeded=false;
 
+    uint32_t minxc, maxxc, minyc, maxyc;
+    QuadIndex::CellIds(minlon, maxlon,
+                       minlat, maxlat,
+                       QuadIndex::MAX_LEVEL,
+                       minxc, maxxc,
+                       minyc, maxyc);
+
     for (size_t i=0; i<nodeTypeData.size(); i++) {
       if (nodeTypes.IsTypeSet(i)) {
         if (!GetOffsets(nodeTypeData[i],
-                        minlon,
-                        minlat,
-                        maxlon,
-                        maxlat,
+                        minxc,
+                        minyc,
+                        maxxc,
+                        maxyc,
                         maxNodeCount,
                         nodeOffsets,
                         nodeOffsets.size(),

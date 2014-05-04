@@ -215,7 +215,7 @@ namespace osmscout {
                         double& maxLon,
                         double& minLat,
                         double& maxLat) const;
-
+#ifndef SWIG
     bool ReadIds(FileScanner& scanner,
                  uint32_t nodesCount,
                  std::vector<Id>& ids);
@@ -231,8 +231,9 @@ namespace osmscout {
                     const std::vector<GeoCoord>& coords) const;
     bool Write(FileWriter& writer) const;
     bool WriteOptimized(FileWriter& writer) const;
-  };
+#endif
 
+  };
   typedef Ref<Area> AreaRef;
 }
 

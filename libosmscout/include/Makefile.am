@@ -24,6 +24,7 @@ nobase_include_HEADERS= osmscout/private/Config.h \
                         osmscout/util/StopClock.h \
                         osmscout/util/String.h \
                         osmscout/util/Transformation.h \
+                        osmscout/util/QuadIndex.h \
                         osmscout/CoreFeatures.h \
                         osmscout/Types.h \
                         osmscout/TypeConfig.h \
@@ -77,5 +78,6 @@ nobase_include_HEADERS+=osmscout/system/SSEMath.h
 endif
 
 if OSMSCOUT_HAVE_LIB_MARISA
-nobase_include_HEADERS+=osmscout/TextSearchIndex.h
+nobase_include_HEADERS+=osmscout/util/utf8.h \
+                        osmscout/TextSearchIndex.h
 endif

@@ -376,6 +376,10 @@ namespace osmscout {
                        const std::vector<GeoCoord>& nodes,
                        size_t& start, size_t &end,
                        double optimizeErrorTolerance);
+    /**
+     * 'start' and 'end' will be set to current buffer position,
+     * i.e the last coordinate of the transformed way.
+     */
     bool TransformWay(const Projection& projection,
                       TransPolygon::OptimizeMethod optimize,
                       const std::vector<GeoCoord>& nodes,
@@ -383,5 +387,4 @@ namespace osmscout {
                       double optimizeErrorTolerance);
   };
 }
-
 #endif

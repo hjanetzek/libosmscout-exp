@@ -60,4 +60,4 @@ echo " $options" | tee -a $outputFile
 echo "Call:" | tee -a $outputFile
 echo " ../Import/src/Import $options --typefile ../Import/map.ost --destinationDirectory $targetDirectory $mappingFile" | tee -a $outputFile
 
-../Import/src/Import $options --typefile ../Import/map.ost --destinationDirectory $targetDirectory $mappingFile 2>&1 | tee -a $outputFile
+../Import/src/Import -d $options --typefile ../Import/map.ost --destinationDirectory $targetDirectory $mappingFile 2>&1 | tee -a $outputFile

@@ -188,7 +188,7 @@ namespace osmscout {
     {
       return access & onewayBackward;
     }
-
+#ifndef SWIG
     void Parse(Progress& progress,
                const TypeConfig& typeConfig,
                TypeId type,
@@ -197,7 +197,7 @@ namespace osmscout {
 
     bool Read(FileScanner& scanner);
     bool Write(FileWriter& writer) const;
-
+#endif
     bool operator==(const AttributeAccess& other) const;
     bool operator!=(const AttributeAccess& other) const;
   };
