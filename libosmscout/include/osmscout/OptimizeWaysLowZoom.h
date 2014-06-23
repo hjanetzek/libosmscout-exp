@@ -53,13 +53,6 @@ namespace osmscout {
       uint32_t   cellXCount;
       uint32_t   cellYCount;
 
-      double     cellWidth;
-      double     cellHeight;
-
-      double     minLon;
-      double     maxLon;
-      double     minLat;
-      double     maxLat;
     };
 
   private:
@@ -75,10 +68,10 @@ namespace osmscout {
                       TypeData& data);
 
     bool GetOffsets(const TypeData& typeData,
-                    double minlon,
-                    double minlat,
-                    double maxlon,
-                    double maxlat,
+                    uint32_t minxc,
+                    uint32_t minyc,
+                    uint32_t maxxc,
+                    uint32_t maxyc,
                     std::vector<FileOffset>& offsets) const;
 
   public:

@@ -31,6 +31,7 @@
 #include <osmscout/util/Projection.h>
 #include <osmscout/util/String.h>
 #include <osmscout/util/Transformation.h>
+#include <osmscout/util/QuadIndex.h>
 
 namespace osmscout
 {
@@ -270,8 +271,6 @@ namespace osmscout
     size_t level=5;//parameter.GetOptimizationMinMag();
 
     while (true) {
-      double                 cellWidth=360.0/pow(2.0,(int)level);
-      double                 cellHeight=180.0/pow(2.0,(int)level);
       std::map<Pixel,size_t> cellFillCount;
 
       for (std::list<AreaRef>::const_iterator a=areas.begin();
@@ -279,22 +278,16 @@ namespace osmscout
           ++a) {
         AreaRef area=*a;
         // Count number of entries per current type and coordinate
-        double minLon;
-        double maxLon;
-        double minLat;
-        double maxLat;
+        uint32_t minxc;
+        uint32_t maxxc;
+        uint32_t minyc;
+        uint32_t maxyc;
 
-        area->GetBoundingBox(minLon,maxLon,minLat,maxLat);
-
-        //
-        // Calculate minimum and maximum tile ids that are covered
-        // by the way
-        // Renormated coordinate space (everything is >=0)
-        //
-        uint32_t minxc=(uint32_t)floor((minLon+180.0)/cellWidth);
-        uint32_t maxxc=(uint32_t)floor((maxLon+180.0)/cellWidth);
-        uint32_t minyc=(uint32_t)floor((minLat+90.0)/cellHeight);
-        uint32_t maxyc=(uint32_t)floor((maxLat+90.0)/cellHeight);
+        QuadIndex::AreaCellIds(*a, level,
+                               minxc,
+                               maxxc,
+                               minyc,
+                               maxyc);
 
         for (uint32_t y=minyc; y<=maxyc; y++) {
           for (uint32_t x=minxc; x<=maxxc; x++) {
@@ -385,35 +378,28 @@ namespace osmscout
       return true;
     }
 
-    double                                 cellWidth=360.0/pow(2.0,(int)data.indexLevel);
-    double                                 cellHeight=180.0/pow(2.0,(int)data.indexLevel);
     std::map<Pixel,std::list<FileOffset> > cellOffsets;
 
     for (std::list<AreaRef>::const_iterator a=areas.begin();
         a!=areas.end();
         a++) {
       AreaRef                         area(*a);
-      double                          minLon;
-      double                          maxLon;
-      double                          minLat;
-      double                          maxLat;
       FileOffsetFileOffsetMap::const_iterator offset=offsets.find(area->GetFileOffset());
 
       if (offset==offsets.end()) {
         continue;
       }
 
-      area->GetBoundingBox(minLon,maxLon,minLat,maxLat);
+      uint32_t minxc;
+      uint32_t maxxc;
+      uint32_t minyc;
+      uint32_t maxyc;
 
-      //
-      // Calculate minimum and maximum tile ids that are covered
-      // by the way
-      // Renormated coordinate space (everything is >=0)
-      //
-      uint32_t minxc=(uint32_t)floor((minLon+180.0)/cellWidth);
-      uint32_t maxxc=(uint32_t)floor((maxLon+180.0)/cellWidth);
-      uint32_t minyc=(uint32_t)floor((minLat+90.0)/cellHeight);
-      uint32_t maxyc=(uint32_t)floor((maxLat+90.0)/cellHeight);
+      QuadIndex::AreaCellIds(*a, data.indexLevel,
+                             minxc,
+                             maxxc,
+                             minyc,
+                             maxyc);
 
       for (uint32_t y=minyc; y<=maxyc; y++) {
         for (uint32_t x=minxc; x<=maxxc; x++) {

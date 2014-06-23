@@ -22,6 +22,7 @@
 #include <iostream>
 
 #include <osmscout/system/Math.h>
+#include <osmscout/util/QuadIndex.h>
 
 namespace osmscout {
 
@@ -128,47 +129,45 @@ namespace osmscout {
       return false;
     }
 
-    // Calculate the size of a cell in each index level
-    cellWidth.resize(maxLevel+1);
-    cellHeight.resize(maxLevel+1);
-
-    for (size_t i=0; i<cellWidth.size(); i++) {
-      cellWidth[i]=360.0/pow(2.0,(int)i);
-    }
-
-    for (size_t i=0; i<cellHeight.size(); i++) {
-      cellHeight[i]=180.0/pow(2.0,(int)i);
-    }
-
     return !scanner.HasError() && scanner.Close();
   }
 
-  bool AreaAreaIndex::GetOffsets(double minlon,
-                                 double minlat,
-                                 double maxlon,
-                                 double maxlat,
-                                 size_t maxLevel,
-                                 const TypeSet& types,
-                                 size_t maxCount,
-                                 std::vector<FileOffset>& offsets) const
-  {
-    std::vector<CellRef>    cellRefs;     // cells to scan in this level
-    std::vector<CellRef>    nextCellRefs; // cells to scan for the next level
-    std::vector<FileOffset> newOffsets;   // offsets collected in the current level
+  bool
+  AreaAreaIndex::GetOffsets(double minlon,
+                            double minlat,
+                            double maxlon,
+                            double maxlat,
+                            size_t maxLevel,
+                            const TypeSet& types,
+                            size_t maxCount,
+                            std::vector<FileOffset>& offsets) const
+                            {
+    std::vector<CellRef> cellRefs;     // cells to scan in this level
+    std::vector<CellRef> nextCellRefs; // cells to scan for the next level
+    OSMSCOUT_HASHSET<FileOffset> newOffsets;   // offsets collected in the current level
 
-    minlon+=180;
-    maxlon+=180;
-    minlat+=90;
-    maxlat+=90;
+    // cells at MAX_LEVEL (for one axis)
+    size_t msize=(1<<QuadIndex::MAX_LEVEL);
+
+    // Convert bbox to cells at MAX_LEVEL
+    uint32_t xmin, xmax, ymin, ymax;
+    QuadIndex::CellIds(minlon,maxlon,
+                       minlat,maxlat,
+                       QuadIndex::MAX_LEVEL,
+                       xmin,xmax,
+                       ymin,ymax);
+    //std::cerr << "query " << minlon << " " << minlat << " " << maxlon << " " << maxlat << std::endl;
+    //std::cerr << " cells: " << minX << " " << maxX << " / " << minY << " " << maxY << std::endl;
 
     // Clear result datastructures
     offsets.clear();
 
     // Make the vector preallocate memory for the expected data size
     // This should void reallocation
-    offsets.reserve(std::min(100000u,(uint32_t)maxCount));
-    newOffsets.reserve(std::min(100000u,(uint32_t)maxCount));
-
+    offsets.reserve(std::min(100000u,(uint32_t) maxCount));
+#if defined(OSMSCOUT_HASHSET_HAS_RESERVE)
+    newOffsets.reserve(std::min(100000u,(uint32_t) maxCount));
+#endif
     cellRefs.reserve(1000);
 
     nextCellRefs.reserve(1000);
@@ -195,8 +194,6 @@ namespace osmscout {
       for (size_t i=0; !stopArea && i<cellRefs.size(); i++) {
         size_t               cx;
         size_t               cy;
-        double               x;
-        double               y;
         IndexCache::CacheRef cell;
 
         if (!GetIndexCell(level,cellRefs[i].offset,cell)) {
@@ -204,9 +201,7 @@ namespace osmscout {
           return false;
         }
 
-        if (offsets.size()+
-            newOffsets.size()+
-            cell->value.areas.size()>=maxCount) {
+        if (offsets.size()+newOffsets.size()+cell->value.areas.size()>=maxCount) {
           stopArea=true;
           continue;
         }
@@ -215,62 +210,64 @@ namespace osmscout {
              entry!=cell->value.areas.end();
              ++entry) {
           if (types.IsTypeSet(entry->type)) {
-            newOffsets.push_back(entry->offset);
+            newOffsets.insert(entry->offset);
           }
         }
 
-        cx=cellRefs[i].x*2;
-        cy=cellRefs[i].y*2;
+        // children cell index (bottom-left)
+        cx=cellRefs[i].x <<= 1;
+        cy=cellRefs[i].y <<= 1;
+
+        size_t clevel = QuadIndex::MAX_LEVEL - level;
+
+        size_t cxmin = xmin>>(clevel);
+        size_t cymin = ymin>>(clevel);
+
+        size_t cxmax = xmax>>(clevel);
+        size_t cymax = ymax>>(clevel);
+
+        // size of children cell (in cells at MAX_LEVEL)
+        size_t csize=msize>>(level+1);
+
+        //std::cerr << "cell: " << level << "/"<< cellRefs[i].x << "/" << ((1 << level) - cellRefs[i].y - 1) << std::endl;
+        //std::cerr << "size: " << csize << " / " << msize << std::endl;
 
         if (cell->value.children[0]!=0) {
-          // top left
+          // top-left cell offset
+          size_t x=cx*csize;
+          size_t y=(cy+1)*csize;
 
-          x=cx*cellWidth[level+1];
-          y=(cy+1)*cellHeight[level+1];
-
-          if (!(x>maxlon+cellWidth[level+1]/2 ||
-                y>maxlat+cellHeight[level+1]/2 ||
-                x+cellWidth[level+1]<minlon-cellWidth[level+1]/2 ||
-                y+cellHeight[level+1]<minlat-cellHeight[level+1]/2)) {
+          if ((x>xmin-csize)&&(y>ymin-csize)&&(x<xmax)&&(y<ymax)) {
             nextCellRefs.push_back(CellRef(cell->value.children[0],cx,cy+1));
           }
         }
 
         if (cell->value.children[1]!=0) {
-          // top right
-          x=(cx+1)*cellWidth[level+1];
-          y=(cy+1)*cellHeight[level+1];
+          // top-right cell offset
+          size_t x=(cx+1)*csize;
+          size_t y=(cy+1)*csize;
 
-          if (!(x>maxlon+cellWidth[level+1]/2 ||
-                y>maxlat+cellHeight[level+1]/2 ||
-                x+cellWidth[level+1]<minlon-cellWidth[level+1]/2 ||
-                y+cellHeight[level+1]<minlat-cellHeight[level+1]/2)) {
+          if ((x>xmin-csize)&&(y>ymin-csize)&&(x<xmax)&&(y<ymax)) {
             nextCellRefs.push_back(CellRef(cell->value.children[1],cx+1,cy+1));
           }
         }
 
         if (cell->value.children[2]!=0) {
-          // bottom left
-          x=cx*cellWidth[level+1];
-          y=cy*cellHeight[level+1];
+          // bottom-left cell offset
+          size_t x=cx*csize;
+          size_t y=cy*csize;
 
-          if (!(x>maxlon+cellWidth[level+1]/2 ||
-                y>maxlat+cellHeight[level+1]/2 ||
-                x+cellWidth[level+1]<minlon-cellWidth[level+1]/2 ||
-                y+cellHeight[level+1]<minlat-cellHeight[level+1]/2)) {
+          if ((x>xmin-csize)&&(y>ymin-csize)&&(x<xmax)&&(y<ymax)) {
             nextCellRefs.push_back(CellRef(cell->value.children[2],cx,cy));
           }
         }
 
         if (cell->value.children[3]!=0) {
-          // bottom right
-          x=(cx+1)*cellWidth[level+1];
-          y=cy*cellHeight[level+1];
+          // bottom-right cell offset
+          size_t x=(cx+1)*csize;
+          size_t y=cy*csize;
 
-          if (!(x>maxlon+cellWidth[level+1]/2 ||
-                y>maxlat+cellHeight[level+1]/2 ||
-                x+cellWidth[level+1]<minlon-cellWidth[level+1]/2 ||
-                y+cellHeight[level+1]<minlat-cellHeight[level+1]/2)) {
+          if ((x>xmin-csize)&&(y>ymin-csize)&&(x<xmax)&&(y<ymax)) {
             nextCellRefs.push_back(CellRef(cell->value.children[3],cx+1,cy));
           }
         }

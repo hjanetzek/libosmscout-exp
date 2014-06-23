@@ -24,6 +24,7 @@ nobase_include_HEADERS= osmscout/private/Config.h \
                         osmscout/util/StopClock.h \
                         osmscout/util/String.h \
                         osmscout/util/Transformation.h \
+                        osmscout/util/QuadIndex.h \
                         osmscout/CoreFeatures.h \
                         osmscout/Types.h \
                         osmscout/TypeConfig.h \
