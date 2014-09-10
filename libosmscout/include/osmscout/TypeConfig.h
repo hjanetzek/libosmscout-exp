@@ -57,6 +57,7 @@ namespace osmscout {
    *
    * Abstract base class for all tag based conditions
    */
+#ifndef SWIG
   class OSMSCOUT_API TagCondition : public Referencable
   {
   public:
@@ -181,6 +182,7 @@ namespace osmscout {
 
     bool Evaluate(const std::map<TagId,std::string>& tagMap) const;
   };
+#endif // NOSWIG
 
   /**
    * \ingroup type
@@ -635,7 +637,7 @@ namespace osmscout {
   public:
     TypeConfig();
     virtual ~TypeConfig();
-
+#ifndef SWIG
     void RestoreTagInfo(const TagInfo& tagInfo);
     void RestoreNameTagInfo(TagId tagId, uint32_t priority);
     void RestoreNameAltTagInfo(TagId tagId, uint32_t priority);
@@ -647,7 +649,7 @@ namespace osmscout {
     void RegisterNameAltTag(const std::string& tagName, uint32_t priority);
 
     TypeConfig& AddTypeInfo(TypeInfo& typeInfo);
-
+#endif
     const std::vector<TagInfo>& GetTags() const;
     const std::vector<TypeInfo>& GetTypes() const;
 
@@ -658,6 +660,7 @@ namespace osmscout {
     const TagInfo& GetTagInfo(TagId id) const;
     const TypeInfo& GetTypeInfo(TypeId id) const;
 
+#ifndef SWIG
     void ResolveTags(const std::map<TagId,std::string>& map,
                      std::vector<Tag>& tags) const;
 
@@ -671,16 +674,16 @@ namespace osmscout {
                           TypeId &areaType) const;
     bool GetRelationTypeId(const std::map<TagId,std::string>& tagMap,
                            TypeId &typeId) const;
-
+#endif
     TypeId GetTypeId(const std::string& name) const;
     TypeId GetNodeTypeId(const std::string& name) const;
     TypeId GetWayTypeId(const std::string& name) const;
     TypeId GetAreaTypeId(const std::string& name) const;
     TypeId GetRelationTypeId(const std::string& name) const;
 
+#ifndef SWIG
     void GetAreaTypes(std::set<TypeId>& types) const;
     void GetWayTypes(std::set<TypeId>& types) const;
-
     void GetRoutables(std::set<TypeId>& types) const;
     void GetIndexAsLocationTypes(OSMSCOUT_HASHSET<TypeId>& types) const;
     void GetIndexAsRegionTypes(OSMSCOUT_HASHSET<TypeId>& types) const;
@@ -690,6 +693,7 @@ namespace osmscout {
                                        size_t grade);
     bool GetGradeForSurface(const std::string& surface,
                             size_t& grade) const;
+#endif
   };
 
 

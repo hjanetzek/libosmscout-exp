@@ -111,7 +111,7 @@ namespace osmscout {
   /**
     \ingroup Location
     A location is a named point, way, area or relation on the map.
-    Something you can search for. Location are currently returned
+    Something you can search for. Locations are currently returned
     by Database.GetMatchingLocations() which uses CityStreetIndex
     internally.
    */
@@ -146,7 +146,7 @@ namespace osmscout {
   /**
     \ingroup Location
     An address is a unique place at a given location, normally a building that
-    is address by its house number.
+    is addressed by its house number.
    */
   class OSMSCOUT_API Address : public Referencable
   {

@@ -1,0 +1,49 @@
+<project name="osmscout-natives" basedir="." default="all">
+  <target name="clean">
+    <ant antfile="build-android32.xml" target="clean" />
+		<!-- <ant antfile="build-linux64.xml" target="clean"/> -->
+  </target>
+
+  <target name="copy-sources">
+    <copy todir=".">
+      <fileset dir="../../../src">
+	<include name="**/*.cpp" />
+      </fileset>
+    </copy>
+    <copy todir="include">
+      <fileset dir="../../../include">
+	<include name="**/*.h" />
+	<exclude name="**/Config.h" />
+	<exclude name="**/CoreFeatures.h" />
+	<exclude name="**/MapFeatures.h" />
+      </fileset>
+    </copy>
+
+    <copy file="../config/Config.h" todir="include/osmscout/private"/>
+    <copy file="../config/CoreFeatures.h" todir="include/osmscout"/>
+
+    <copy file="../../java/osmscout_wrap.cxx" todir="."/>
+
+   <!--  <copy todir="../src">
+      <fileset dir="../../java/gen">
+	<include name="**/*.java" />
+      </fileset>
+    </copy> -->
+  </target>
+
+  <target name="compile-natives">
+    <ant antfile="build-android32.xml" />
+	<!-- <ant antfile="build-linux64.xml"/> -->
+
+  </target>
+
+  <target name="pack-natives">
+    <jar destfile="../libs/osmscout-natives.jar">
+      <fileset dir="../libs/linux64" includes="libosmscout64.so" />
+
+    </jar>
+  </target>
+
+	<!-- <target name="all" depends="compile-natives,pack-natives"/> -->
+  <target name="all" depends="copy-sources,compile-natives" />
+</project>

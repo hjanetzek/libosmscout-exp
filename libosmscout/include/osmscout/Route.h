@@ -49,6 +49,7 @@ namespace osmscout {
   class OSMSCOUT_API RouteDescription
   {
   public:
+#ifndef SWIG
     /** Constant for a description of the start node (StartDescription) */
     static const char* const NODE_START_DESC;
     /** Constant for a description of the target node (TargetDescription) */
@@ -73,6 +74,7 @@ namespace osmscout {
     static const char* const MOTORWAY_CHANGE_DESC;
     /** Constant for a description of leaving a motorway (MotorwayLeaveDescription) */
     static const char* const MOTORWAY_LEAVE_DESC;
+#endif
 
   public:
     /**

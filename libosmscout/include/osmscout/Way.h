@@ -171,6 +171,7 @@ namespace osmscout {
       return tags;
     }
 
+#ifndef SWIG
     bool SetTags(Progress& progress,
                  const TypeConfig& typeConfig,
                  Id id,
@@ -180,6 +181,7 @@ namespace osmscout {
 
     bool Read(FileScanner& scanner);
     bool Write(FileWriter& writer) const;
+#endif
 
     bool operator==(const WayAttributes& other) const;
     bool operator!=(const WayAttributes& other) const;
@@ -323,7 +325,7 @@ namespace osmscout {
 
     bool GetNodeIndexByNodeId(Id id,
                               size_t& index) const;
-
+#ifndef SWIG
     void SetType(TypeId type);
 
     bool SetTags(Progress& progress,
@@ -332,12 +334,12 @@ namespace osmscout {
                  std::vector<Tag>& tags);
 
     void SetLayerToMax();
-
     bool Read(FileScanner& scanner);
     bool ReadOptimized(FileScanner& scanner);
 
     bool Write(FileWriter& writer) const;
     bool WriteOptimized(FileWriter& writer) const;
+#endif
   };
 
   typedef Ref<Way> WayRef;

@@ -160,7 +160,7 @@ namespace osmscout {
 
     std::string GetPath() const;
     TypeConfigRef GetTypeConfig() const;
-
+#ifndef SWIG
     NodeDataFileRef GetNodeDataFile() const;
     AreaDataFileRef GetAreaDataFile() const;
     WayDataFileRef GetWayDataFile() const;
@@ -175,44 +175,48 @@ namespace osmscout {
 
     OptimizeAreasLowZoomRef GetOptimizeAreasLowZoom() const;
     OptimizeWaysLowZoomRef GetOptimizeWaysLowZoom() const;
-
+#endif
     bool GetBoundingBox(double& minLat,double& minLon,
                         double& maxLat,double& maxLon) const;
-
     bool GetNodeByOffset(const FileOffset& offset,
                          NodeRef& node) const;
     bool GetNodesByOffset(const std::vector<FileOffset>& offsets,
                           std::vector<NodeRef>& nodes) const;
+#ifndef SWIG
     bool GetNodesByOffset(const std::set<FileOffset>& offsets,
                           std::vector<NodeRef>& nodes) const;
     bool GetNodesByOffset(const std::list<FileOffset>& offsets,
                           std::vector<NodeRef>& nodes) const;
     bool GetNodesByOffset(const std::set<FileOffset>& offsets,
                           OSMSCOUT_HASHMAP<FileOffset,NodeRef>& dataMap) const;
+#endif
 
     bool GetAreaByOffset(const FileOffset& offset,
                          AreaRef& area) const;
     bool GetAreasByOffset(const std::vector<FileOffset>& offsets,
                           std::vector<AreaRef>& areas) const;
+#ifndef SWIG
     bool GetAreasByOffset(const std::set<FileOffset>& offsets,
                           std::vector<AreaRef>& areas) const;
     bool GetAreasByOffset(const std::list<FileOffset>& offsets,
                           std::vector<AreaRef>& areas) const;
     bool GetAreasByOffset(const std::set<FileOffset>& offsets,
                           OSMSCOUT_HASHMAP<FileOffset,AreaRef>& dataMap) const;
+#endif
 
     bool GetWayByOffset(const FileOffset& offset,
                         WayRef& way) const;
     bool GetWaysByOffset(const std::vector<FileOffset>& offsets,
                          std::vector<WayRef>& ways) const;
+#ifndef SWIG
     bool GetWaysByOffset(const std::set<FileOffset>& offsets,
                          std::vector<WayRef>& ways) const;
     bool GetWaysByOffset(const std::list<FileOffset>& offsets,
                          std::vector<WayRef>& ways) const;
     bool GetWaysByOffset(const std::set<FileOffset>& offsets,
                          OSMSCOUT_HASHMAP<FileOffset,WayRef>& dataMap) const;
-
     void DumpStatistics();
+#endif
   };
 
   //! Reference counted reference to an Database instance

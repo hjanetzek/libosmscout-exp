@@ -77,5 +77,6 @@ nobase_include_HEADERS+=osmscout/system/SSEMath.h
 endif
 
 if OSMSCOUT_HAVE_LIB_MARISA
-nobase_include_HEADERS+=osmscout/TextSearchIndex.h
+nobase_include_HEADERS+=osmscout/util/utf8.h \
+                        osmscout/TextSearchIndex.h
 endif

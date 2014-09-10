@@ -27,6 +27,7 @@
 
 namespace osmscout {
 
+#ifndef SWIG
   /** Constant for a description of the start node (StartDescription) */
   const char* const RouteDescription::NODE_START_DESC       = "NodeStart";
   /** Constant for a description of the target node (TargetDescription) */
@@ -52,6 +53,7 @@ namespace osmscout {
   /** Constant for a description of leaving a motorway (MotorwayLeaveDescription) */
   const char* const RouteDescription::MOTORWAY_LEAVE_DESC   = "MotorwayLeave";
 
+#endif
   RouteDescription::Description::~Description()
   {
     // no code

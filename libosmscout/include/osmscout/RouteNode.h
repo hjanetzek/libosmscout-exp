@@ -88,7 +88,7 @@ namespace osmscout {
     {
       return id;
     }
-
+#ifndef SWIG
     inline FileOffset GetFileOffset() const
     {
       return fileOffset;
@@ -98,6 +98,7 @@ namespace osmscout {
 
     bool Read(FileScanner& scanner);
     bool Write(FileWriter& writer) const;
+#endif
   };
 
   typedef Ref<RouteNode> RouteNodeRef;
